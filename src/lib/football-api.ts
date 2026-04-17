@@ -132,9 +132,14 @@ const MOCK_TEAMS: Team[] = [
 export async function getStandings(): Promise<Standing[]> {
   return getCached('standings-serie-a', TTL.DAY, async () => {
     // TODO: Replace with real API calls when configured
-    if (API_CONFIG.footballData.key) {
-      // Use Football-data.org API
-      return await fetchFootballDataStandings();
+    if (API_CONFIG.footballData.key && API_CONFIG.footballData.key !== '') {
+      try {
+        // Use Football-data.org API
+        return await fetchFootballDataStandings();
+      } catch (error) {
+        console.warn('API call failed, using mock data:', error);
+        // Fall through to mock data
+      }
     }
 
     // Return mock data for development
@@ -162,8 +167,13 @@ export async function getMatches(round?: number, status?: 'scheduled' | 'finishe
 
   return getCached(cacheKey, TTL.HOUR * 6, async () => {
     // TODO: Replace with real API calls
-    if (API_CONFIG.apiFootball.key) {
-      return await fetchApiFootballMatches(round, status);
+    if (API_CONFIG.apiFootball.key && API_CONFIG.apiFootball.key !== '') {
+      try {
+        return await fetchApiFootballMatches(round, status);
+      } catch (error) {
+        console.warn('API call failed, using mock data:', error);
+        // Fall through to mock data
+      }
     }
 
     // Return mock data

@@ -1,0 +1,109 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPostsByCategory } from '@/lib/wordpress';
+
+// Fetch Coppa Italia articles
+let posts: any[] = [];
+
+try {
+  const result = await getPostsByCategory('coppa-italia', 12, 0);
+  posts = result.posts.map((post) => ({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.featuredImage?.node.sourceUrl,
+    date: post.date,
+    category: 'Coppa Italia',
+  }));
+} catch (error) {
+  posts = [
+    {
+      title: 'Coppa Italia à venir',
+      excerpt: 'Les actualités de la Coupe d\'Italie seront bientôt disponibles.',
+      slug: 'coppa-italia',
+      date: new Date().toISOString(),
+      category: 'Coppa Italia',
+    },
+  ];
+}
+---
+
+<PageLayout
+  title="Coppa Italia - Coupe d'Italie - Vai Calcio"
+  description="Toute l'actualité de la Coppa Italia : résultats, calendrier, analyses et historique de la Coupe d'Italie de football."
+  breadcrumbs={[{ label: 'Coppa Italia', href: '/coppa-italia' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Coppa Italia
+    </h1>
+    <p class="text-lg text-text/70">
+      Suivez toute l'actualité de la Coupe d'Italie : résultats, calendrier,
+      analyses des matchs et parcours des équipes.
+    </p>
+  </div>
+
+  <!-- Competition Info -->
+  <div class="card p-6 mb-8 bg-accent-light">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      À propos de la Coppa Italia
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+      <div>
+        <p class="mb-3 text-text/80 leading-relaxed">
+          La Coppa Italia est la principale coupe nationale de football en
+          Italie. Créée en 1922, elle oppose les clubs de Serie A, Serie B et
+          de divisions inférieures.
+        </p>
+        <p class="text-text/80 leading-relaxed">
+          Le vainqueur se qualifie pour la Ligue Europa et affronte le
+          champion d'Italie en Supercoupe d'Italie.
+        </p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Format de la compétition</h3>
+        <ul class="space-y-1 text-text/70">
+          <li>• Tours préliminaires (août)</li>
+          <li>• Huitièmes de finale (janvier)</li>
+          <li>• Quarts de finale (février)</li>
+          <li>• Demi-finales (avril, aller-retour)</li>
+          <li>• Finale (mai, match unique)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Articles -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-condensed font-semibold mb-6">
+      Dernières actualités
+    </h2>
+    <ArticleGrid articles={posts} />
+  </div>
+
+  <!-- Stats -->
+  <div class="card p-6">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      Clubs les plus titrés
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div>
+        <p class="font-semibold">Juventus</p>
+        <p class="text-text/60">15 titres</p>
+      </div>
+      <div>
+        <p class="font-semibold">AS Roma</p>
+        <p class="text-text/60">9 titres</p>
+      </div>
+      <div>
+        <p class="font-semibold">Inter Milan</p>
+        <p class="text-text/60">9 titres</p>
+      </div>
+      <div>
+        <p class="font-semibold">Lazio</p>
+        <p class="text-text/60">7 titres</p>
+      </div>
+    </div>
+  </div>
+</PageLayout>

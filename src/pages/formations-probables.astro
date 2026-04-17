@@ -1,0 +1,156 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+
+// TODO: Fetch formations from WordPress CPT when scraper is implemented (Phase 3)
+---
+
+<PageLayout
+  title="Formations Probables Serie A - Vai Calcio"
+  description="Les compositions d'équipes probables pour chaque journée de Serie A : onze de départ, schémas tactiques et joueurs attendus."
+  breadcrumbs={[{ label: 'Formations Probables', href: '/formations-probables' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Formations Probables
+    </h1>
+    <p class="text-lg text-text/70">
+      Les compositions d'équipes attendues pour chaque match de Serie A,
+      basées sur l'analyse de plusieurs sources italiennes.
+    </p>
+  </div>
+
+  <!-- Info Banner -->
+  <div class="card p-6 mb-8 bg-accent-light">
+    <div class="flex items-start gap-4">
+      <div class="text-3xl">⚠️</div>
+      <div>
+        <h2 class="font-condensed font-semibold text-lg mb-2">
+          Fonctionnalité à venir
+        </h2>
+        <p class="text-sm text-text/80 leading-relaxed">
+          Les formations probables seront automatiquement scrapées depuis les
+          sources italiennes de référence (Gazzetta dello Sport, Sky Sport
+          Italia, TuttoSport, Corriere dello Sport) et publiées avant chaque
+          journée.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-xl mb-4">
+        Comment ça marche ?
+      </h2>
+      <ul class="space-y-3 text-sm text-text/80">
+        <li class="flex items-start gap-2">
+          <span class="text-accent font-bold">1.</span>
+          <span>
+            Scraping automatique des sources italiennes avant chaque journée
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-accent font-bold">2.</span>
+          <span>
+            Analyse et comparaison des compositions annoncées par chaque source
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-accent font-bold">3.</span>
+          <span>
+            Calcul d'un score de confiance pour chaque joueur (basé sur le
+            nombre de sources qui le citent)
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-accent font-bold">4.</span>
+          <span>
+            Publication des formations avec visualisation terrain et scores de
+            confiance
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-xl mb-4">
+        Sources consultées
+      </h2>
+      <ul class="space-y-2 text-sm">
+        <li class="flex items-center gap-2">
+          <span class="w-2 h-2 bg-accent rounded-full"></span>
+          <span><strong>Gazzetta dello Sport</strong></span>
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="w-2 h-2 bg-accent rounded-full"></span>
+          <span><strong>Sky Sport Italia</strong></span>
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="w-2 h-2 bg-accent rounded-full"></span>
+          <span><strong>TuttoSport</strong></span>
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="w-2 h-2 bg-accent rounded-full"></span>
+          <span><strong>Corriere dello Sport</strong></span>
+        </li>
+      </ul>
+      <p class="text-xs text-text/60 mt-4">
+        Plus une composition est citée par plusieurs sources, plus le score de
+        confiance est élevé.
+      </p>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="card p-6">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      Calendrier de publication
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+      <div>
+        <h3 class="font-semibold mb-2">Jeudi 10h</h3>
+        <p class="text-text/70">
+          Première publication des formations pour les matchs du week-end
+          (samedi/dimanche)
+        </p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Samedi 8h</h3>
+        <p class="text-text/70">
+          Mise à jour avec les dernières informations avant les matchs
+        </p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Mardi 10h</h3>
+        <p class="text-text/70">
+          Formations pour les matchs en milieu de semaine (si applicable)
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Links -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/resultats-calendrier" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Résultats & Calendrier</h3>
+      <p class="text-sm text-text/70">
+        Tous les matchs de la Serie A
+      </p>
+    </a>
+
+    <a href="/classement" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Classement</h3>
+      <p class="text-sm text-text/70">
+        Classement complet de la Serie A
+      </p>
+    </a>
+
+    <a href="/serie-a" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Actualités Serie A</h3>
+      <p class="text-sm text-text/70">
+        Toutes les news du championnat
+      </p>
+    </a>
+  </div>
+</PageLayout>

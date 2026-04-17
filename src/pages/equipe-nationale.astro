@@ -1,0 +1,138 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPostsByCategory } from '@/lib/wordpress';
+
+// Fetch Squadra Azzurra articles
+let posts: any[] = [];
+
+try {
+  const result = await getPostsByCategory('squadra-azzurra', 12, 0);
+  posts = result.posts.map((post) => ({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.featuredImage?.node.sourceUrl,
+    date: post.date,
+    category: 'Squadra Azzurra',
+  }));
+} catch (error) {
+  posts = [
+    {
+      title: 'Squadra Azzurra à venir',
+      excerpt: 'Les actualités de l\'équipe nationale italienne seront bientôt disponibles.',
+      slug: 'squadra-azzurra',
+      date: new Date().toISOString(),
+      category: 'Squadra Azzurra',
+    },
+  ];
+}
+---
+
+<PageLayout
+  title="Squadra Azzurra - Équipe d'Italie - Vai Calcio"
+  description="Toute l'actualité de la Squadra Azzurra : sélections, matchs, résultats et parcours de l'équipe nationale italienne de football."
+  breadcrumbs={[{ label: 'Squadra Azzurra', href: '/equipe-nationale' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Squadra Azzurra
+    </h1>
+    <p class="text-lg text-text/70">
+      Suivez toute l'actualité de l'équipe d'Italie : sélections, matchs,
+      résultats et analyses de la Nazionale.
+    </p>
+  </div>
+
+  <!-- Team Info -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-lg mb-3">
+        Sélectionneur
+      </h2>
+      <p class="text-sm text-text/70">
+        Informations à venir
+      </p>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-lg mb-3">
+        Prochain match
+      </h2>
+      <p class="text-sm text-text/70">
+        Calendrier à venir
+      </p>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-lg mb-3">
+        Classement FIFA
+      </h2>
+      <p class="text-sm text-text/70">
+        Rang à venir
+      </p>
+    </div>
+  </div>
+
+  <!-- Palmarès -->
+  <div class="card p-6 mb-8 bg-accent-light">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      Palmarès de la Squadra Azzurra
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-semibold mb-3">Coupe du Monde</h3>
+        <ul class="space-y-2 text-sm text-text/80">
+          <li><strong>🏆 4 titres :</strong> 1934, 1938, 1982, 2006</li>
+          <li><strong>Finaliste :</strong> 1970, 1994</li>
+          <li><strong>3e place :</strong> 1990</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-3">Championnat d'Europe</h3>
+        <ul class="space-y-2 text-sm text-text/80">
+          <li><strong>🏆 2 titres :</strong> 1968, 2020</li>
+          <li><strong>Finaliste :</strong> 2000, 2012</li>
+          <li><strong>4e place :</strong> 1980, 1988</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Articles -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-condensed font-semibold mb-6">
+      Dernières actualités
+    </h2>
+    <ArticleGrid articles={posts} />
+  </div>
+
+  <!-- Legends -->
+  <div class="card p-6">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      Légendes de la Nazionale
+    </h2>
+    <p class="text-sm text-text/70 mb-4">
+      L'équipe d'Italie a compté dans ses rangs certains des plus grands
+      joueurs de l'histoire du football.
+    </p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div>
+        <p class="font-semibold">Paolo Maldini</p>
+        <p class="text-text/60">126 sélections</p>
+      </div>
+      <div>
+        <p class="font-semibold">Gianluigi Buffon</p>
+        <p class="text-text/60">176 sélections</p>
+      </div>
+      <div>
+        <p class="font-semibold">Fabio Cannavaro</p>
+        <p class="text-text/60">136 sélections</p>
+      </div>
+      <div>
+        <p class="font-semibold">Andrea Pirlo</p>
+        <p class="text-text/60">116 sélections</p>
+      </div>
+    </div>
+  </div>
+</PageLayout>

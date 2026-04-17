@@ -1,0 +1,105 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPostsByCategory } from '@/lib/wordpress';
+
+// Fetch transfer articles
+let posts: any[] = [];
+
+try {
+  const result = await getPostsByCategory('transferts', 12, 0);
+  posts = result.posts.map((post) => ({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.featuredImage?.node.sourceUrl,
+    date: post.date,
+    category: 'Transferts',
+  }));
+} catch (error) {
+  posts = [
+    {
+      title: 'Mercato à venir',
+      excerpt: 'Les actualités du mercato et des transferts seront bientôt disponibles.',
+      slug: 'transferts',
+      date: new Date().toISOString(),
+      category: 'Transferts',
+    },
+  ];
+}
+---
+
+<PageLayout
+  title="Mercato & Transferts - Vai Calcio"
+  description="Toutes les actualités du mercato italien : transferts, rumeurs, négociations et signatures en Serie A."
+  breadcrumbs={[{ label: 'Transferts', href: '/transferts' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Mercato & Transferts
+    </h1>
+    <p class="text-lg text-text/70">
+      Suivez toutes les actualités du mercato italien : transferts confirmés,
+      rumeurs, négociations en cours et analyses des mouvements en Serie A.
+    </p>
+  </div>
+
+  <!-- Transfer Windows Info -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-xl mb-3">
+        Mercato d'été
+      </h2>
+      <p class="text-sm text-text/70 mb-2">
+        <strong>Ouverture :</strong> 1er juillet
+      </p>
+      <p class="text-sm text-text/70">
+        <strong>Fermeture :</strong> 31 août
+      </p>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="font-condensed font-semibold text-xl mb-3">
+        Mercato d'hiver
+      </h2>
+      <p class="text-sm text-text/70 mb-2">
+        <strong>Ouverture :</strong> 2 janvier
+      </p>
+      <p class="text-sm text-text/70">
+        <strong>Fermeture :</strong> 31 janvier
+      </p>
+    </div>
+  </div>
+
+  <!-- Articles -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-condensed font-semibold mb-6">
+      Dernières actualités mercato
+    </h2>
+    <ArticleGrid articles={posts} />
+  </div>
+
+  <!-- Related Links -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/serie-a" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Actualités Serie A</h3>
+      <p class="text-sm text-text/70">
+        Toutes les news du championnat italien
+      </p>
+    </a>
+
+    <a href="/classement" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Classement</h3>
+      <p class="text-sm text-text/70">
+        Classement complet de la Serie A
+      </p>
+    </a>
+
+    <a href="/blog" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Tous les articles</h3>
+      <p class="text-sm text-text/70">
+        L'ensemble de nos publications
+      </p>
+    </a>
+  </div>
+</PageLayout>
