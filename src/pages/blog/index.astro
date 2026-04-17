@@ -1,0 +1,68 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import Pagination from '@/components/Pagination.astro';
+import { getPosts } from '@/lib/wordpress';
+import { getPaginationData } from '@/lib/utils';
+
+const POSTS_PER_PAGE = 12;
+const currentPage = 1; // TODO: Implement pagination with dynamic routes
+
+// Fetch posts
+let posts: any[] = [];
+let total = 0;
+
+try {
+  const result = await getPosts(POSTS_PER_PAGE, 0);
+  posts = result.posts.map((post) => ({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.featuredImage?.node.sourceUrl,
+    date: post.date,
+    category: post.categories?.nodes[0]?.name,
+  }));
+  total = result.total;
+} catch (error) {
+  console.warn('WordPress not configured, using placeholder data');
+  posts = [
+    {
+      title: 'Bienvenue sur Vai Calcio',
+      excerpt: 'Le site est en construction. Bientôt toute l\'actualité du football italien.',
+      slug: 'bienvenue',
+      date: new Date().toISOString(),
+      category: 'Actualités',
+    },
+  ];
+  total = 1;
+}
+
+const pagination = getPaginationData(currentPage, total, POSTS_PER_PAGE);
+---
+
+<PageLayout
+  title="Blog - Vai Calcio"
+  description="Tous les articles sur le football italien : analyses, actualités, interviews et reportages."
+  breadcrumbs={[{ label: 'Blog', href: '/blog' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl font-condensed font-bold mb-4">Tous les articles</h1>
+    <p class="text-lg text-text/70">
+      Analyses, actualités, interviews et reportages sur le football italien.
+    </p>
+  </div>
+
+  <ArticleGrid articles={posts} />
+
+  {
+    pagination.totalPages > 1 && (
+      <div class="mt-12">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          basePath="/blog"
+        />
+      </div>
+    )
+  }
+</PageLayout>

@@ -1,0 +1,198 @@
+---
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import SEOHead from '@/components/SEOHead.astro';
+import { getPostBySlug, getAllPostSlugs } from '@/lib/wordpress';
+import { generateArticleSchema, generateBreadcrumbSchema, renderJsonLd } from '@/lib/seo';
+import { formatDate } from '@/lib/utils';
+
+// SSR with cache (experimental Astro 5 feature)
+export const prerender = false;
+
+export async function getStaticPaths() {
+  try {
+    const slugs = await getAllPostSlugs();
+    return slugs.map((slug) => ({ params: { slug } }));
+  } catch (error) {
+    console.warn('WordPress not configured, no static paths generated');
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+
+// Fetch post
+let post: any = null;
+
+try {
+  post = await getPostBySlug(slug!);
+} catch (error) {
+  console.error('Failed to fetch post:', error);
+}
+
+// If post not found, return 404
+if (!post) {
+  return Astro.redirect('/404');
+}
+
+// Prepare SEO data
+const siteUrl = Astro.site?.toString() || 'https://vai-calcio.fr';
+const postUrl = `${siteUrl}/blog/${post.slug}`;
+const title = post.seo?.title || post.title;
+const description = post.seo?.metaDesc || post.excerpt;
+const image = post.seo?.opengraphImage?.sourceUrl || post.featuredImage?.node.sourceUrl || '/og-image.jpg';
+
+// JSON-LD schemas
+const articleSchema = generateArticleSchema({
+  title: post.title,
+  description,
+  image,
+  author: 'Vai Calcio',
+  publishedTime: post.date,
+  modifiedTime: post.modified,
+  url: postUrl,
+});
+
+const breadcrumbSchema = generateBreadcrumbSchema(
+  [
+    { label: 'Blog', href: '/blog' },
+    { label: post.title, href: `/blog/${post.slug}` },
+  ],
+  siteUrl
+);
+
+const formattedDate = formatDate(post.date);
+const category = post.categories?.nodes[0];
+const tags = post.tags?.nodes || [];
+---
+
+<ArticleLayout
+  title={title}
+  description={description}
+  image={image}
+  breadcrumbs={[
+    { label: 'Blog', href: '/blog' },
+    { label: post.title, href: `/blog/${post.slug}` },
+  ]}
+>
+  <!-- SEO Head -->
+  <SEOHead
+    slot="head"
+    title={title}
+    description={description}
+    image={image}
+    canonical={postUrl}
+    type="article"
+    publishedTime={post.date}
+    modifiedTime={post.modified}
+    author="Vai Calcio"
+    tags={tags.map((tag: any) => tag.name)}
+  />
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json" set:html={renderJsonLd(articleSchema)} />
+  <script type="application/ld+json" set:html={renderJsonLd(breadcrumbSchema)} />
+
+  <!-- Article Header -->
+  <header class="mb-8">
+    {
+      category && (
+        <a
+          href={`/categorie/${category.slug}`}
+          class="inline-block px-3 py-1 bg-accent-light text-accent text-sm font-medium rounded-sm mb-4 hover:bg-accent hover:text-white transition-colors"
+        >
+          {category.name}
+        </a>
+      )
+    }
+
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      {post.title}
+    </h1>
+
+    <div class="flex items-center gap-4 text-sm text-text/60">
+      <time datetime={post.date}>{formattedDate}</time>
+      {
+        post.modified !== post.date && (
+          <span>• Mis à jour le {formatDate(post.modified)}</span>
+        )
+      }
+    </div>
+  </header>
+
+  <!-- Featured Image -->
+  {
+    post.featuredImage && (
+      <div class="mb-8">
+        <img
+          src={post.featuredImage.node.sourceUrl}
+          alt={post.featuredImage.node.altText || post.title}
+          class="w-full h-auto rounded-sm"
+        />
+      </div>
+    )
+  }
+
+  <!-- Article Content -->
+  <div class="prose prose-lg max-w-none mb-8">
+    <Fragment set:html={post.content} />
+  </div>
+
+  <!-- Tags -->
+  {
+    tags.length > 0 && (
+      <div class="pt-8 border-t border-separator">
+        <h3 class="text-sm font-semibold mb-3">Tags</h3>
+        <div class="flex flex-wrap gap-2">
+          {tags.map((tag: any) => (
+            <a
+              href={`/tag/${tag.slug}`}
+              class="px-3 py-1 bg-accent-light text-accent text-sm rounded-sm hover:bg-accent hover:text-white transition-colors"
+            >
+              {tag.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    )
+  }
+</ArticleLayout>
+
+<style>
+  /* Prose styles for WordPress content */
+  :global(.prose) {
+    @apply text-text;
+  }
+
+  :global(.prose h2) {
+    @apply text-2xl font-condensed font-semibold mt-8 mb-4;
+  }
+
+  :global(.prose h3) {
+    @apply text-xl font-condensed font-semibold mt-6 mb-3;
+  }
+
+  :global(.prose p) {
+    @apply mb-4 leading-relaxed;
+  }
+
+  :global(.prose a) {
+    @apply text-accent hover:underline;
+  }
+
+  :global(.prose ul),
+  :global(.prose ol) {
+    @apply mb-4 ml-6;
+  }
+
+  :global(.prose li) {
+    @apply mb-2;
+  }
+
+  :global(.prose img) {
+    @apply rounded-sm my-6;
+  }
+
+  :global(.prose blockquote) {
+    @apply border-l-4 border-accent pl-4 italic my-6 text-text/80;
+  }
+</style>

@@ -1,0 +1,81 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+---
+
+<PageLayout
+  title="Contact - Vai Calcio"
+  description="Contactez l'équipe de Vai Calcio"
+  breadcrumbs={[{ label: 'Contact', href: '/contact' }]}
+>
+  <div class="max-w-2xl">
+    <h1 class="text-4xl font-condensed font-bold mb-8">Contactez-nous</h1>
+
+    <div class="card p-8 mb-8">
+      <p class="text-lg mb-6">
+        Vous avez une question, une suggestion ou souhaitez signaler un
+        problème ? N'hésitez pas à nous contacter.
+      </p>
+
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-semibold mb-2">Email</h3>
+          <a
+            href="mailto:contact@vai-calcio.fr"
+            class="text-accent hover:underline"
+          >
+            contact@vai-calcio.fr
+          </a>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Temps de réponse</h3>
+          <p class="text-text/70">
+            Nous nous efforçons de répondre à tous les messages dans un délai
+            de 48 heures.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-8">
+      <h2 class="text-2xl font-condensed font-semibold mb-4">
+        Sujets fréquents
+      </h2>
+
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-medium mb-2">📝 Contributions</h3>
+          <p class="text-sm text-text/70">
+            Vous souhaitez contribuer au site en tant que rédacteur ? Envoyez-nous
+            un email avec vos articles précédents ou vos idées de sujets.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium mb-2">🐛 Signaler un bug</h3>
+          <p class="text-sm text-text/70">
+            Si vous rencontrez un problème technique sur le site, décrivez-nous
+            le problème avec le plus de détails possible (navigateur, appareil,
+            captures d'écran).
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium mb-2">💡 Suggestions</h3>
+          <p class="text-sm text-text/70">
+            Vous avez une idée pour améliorer le site ? Nous sommes à l'écoute
+            de vos suggestions !
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-medium mb-2">📧 Newsletter</h3>
+          <p class="text-sm text-text/70">
+            Pour vous désinscrire de la newsletter ou modifier vos préférences,
+            utilisez le lien de désinscription en bas de nos emails.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</PageLayout>

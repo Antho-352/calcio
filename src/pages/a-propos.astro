@@ -1,0 +1,126 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+---
+
+<PageLayout
+  title="À propos - Vai Calcio"
+  description="Découvrez Vai Calcio, votre source d'information sur le football italien"
+  breadcrumbs={[{ label: 'À propos', href: '/a-propos' }]}
+>
+  <div class="prose prose-lg max-w-none">
+    <h1 class="text-4xl font-condensed font-bold mb-8">À propos de Vai Calcio</h1>
+
+    <section class="mb-8">
+      <h2>Notre mission</h2>
+      <p>
+        <strong>Vai Calcio</strong> est votre source d'information dédiée au
+        football italien. Nous vous proposons toute l'actualité de la Serie A,
+        de la Coppa Italia et de la Squadra Azzurra.
+      </p>
+      <p>
+        Notre objectif est de vous offrir des analyses approfondies, des
+        reportages exclusifs et des informations en temps réel sur vos équipes
+        et joueurs préférés du Calcio.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Ce que nous proposons</h2>
+      <ul>
+        <li>
+          <strong>Actualités quotidiennes</strong> : suivez les dernières
+          nouvelles des clubs italiens
+        </li>
+        <li>
+          <strong>Analyses tactiques</strong> : décryptage des matchs et des
+          performances
+        </li>
+        <li>
+          <strong>Résultats et classements</strong> : toutes les données en
+          temps réel
+        </li>
+        <li>
+          <strong>Formations probables</strong> : compositions d'équipes avant
+          chaque journée
+        </li>
+        <li>
+          <strong>Mercato</strong> : suivez tous les transferts et rumeurs
+        </li>
+        <li>
+          <strong>Squadra Azzurra</strong> : l'actualité de l'équipe nationale
+          italienne
+        </li>
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2>Pourquoi Vai Calcio ?</h2>
+      <p>
+        Le nom "Vai Calcio" signifie "Allez le foot" en italien. C'est un cri
+        de passion pour ce sport qui fait vibrer l'Italie depuis plus d'un
+        siècle.
+      </p>
+      <p>
+        Nous sommes des passionnés du football italien et nous souhaitons
+        partager cette passion avec vous, en français, pour tous les
+        francophones amoureux de la Serie A.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Contactez-nous</h2>
+      <p>
+        Vous avez une question, une suggestion ou souhaitez contribuer au site ?
+        <br />
+        N'hésitez pas à nous contacter : <a
+          href="mailto:contact@vai-calcio.fr">contact@vai-calcio.fr</a
+        >
+      </p>
+      <p>
+        Suivez-nous également sur les réseaux sociaux pour ne rien manquer de
+        l'actualité du Calcio !
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Newsletter</h2>
+      <p>
+        Inscrivez-vous à notre newsletter pour recevoir chaque semaine un
+        résumé de l'actualité du football italien directement dans votre boîte
+        mail.
+      </p>
+      <a
+        href="/#newsletter"
+        class="inline-block px-6 py-3 bg-accent text-white font-medium rounded-sm hover:bg-accent/90 transition-colors"
+      >
+        S'abonner à la newsletter
+      </a>
+    </section>
+  </div>
+</PageLayout>
+
+<style>
+  :global(.prose h2) {
+    @apply text-2xl font-condensed font-semibold mt-8 mb-4;
+  }
+
+  :global(.prose p) {
+    @apply mb-4 leading-relaxed;
+  }
+
+  :global(.prose ul) {
+    @apply mb-4 ml-6 list-disc;
+  }
+
+  :global(.prose li) {
+    @apply mb-2;
+  }
+
+  :global(.prose a) {
+    @apply text-accent hover:underline;
+  }
+
+  :global(.prose section) {
+    @apply pb-6 border-b border-separator last:border-0;
+  }
+</style>

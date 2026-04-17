@@ -1,0 +1,65 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPostsByTag, getTagBySlug } from '@/lib/wordpress';
+
+export const prerender = true;
+
+const { slug } = Astro.params;
+
+// Fetch tag and posts
+let tag: any = null;
+let posts: any[] = [];
+
+try {
+  tag = await getTagBySlug(slug!);
+  if (tag) {
+    const result = await getPostsByTag(slug!, 12, 0);
+    posts = result.posts.map((post) => ({
+      title: post.title,
+      excerpt: post.excerpt,
+      slug: post.slug,
+      image: post.featuredImage?.node.sourceUrl,
+      date: post.date,
+      category: post.categories?.nodes[0]?.name,
+    }));
+  }
+} catch (error) {
+  console.error('Failed to fetch tag or posts:', error);
+}
+
+if (!tag) {
+  return Astro.redirect('/404');
+}
+---
+
+<PageLayout
+  title={`Tag : ${tag.name} - Vai Calcio`}
+  description={`Tous les articles avec le tag "${tag.name}"`}
+  breadcrumbs={[
+    { label: 'Blog', href: '/blog' },
+    { label: `Tag : ${tag.name}`, href: `/tag/${tag.slug}` },
+  ]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl font-condensed font-bold mb-4">
+      Tag : {tag.name}
+    </h1>
+    <p class="text-lg text-text/70">
+      {tag.count} {tag.count > 1 ? 'articles' : 'article'}
+    </p>
+  </div>
+
+  {
+    posts.length > 0 ? (
+      <ArticleGrid articles={posts} />
+    ) : (
+      <div class="card p-8 text-center">
+        <p class="text-text/70">Aucun article trouvé pour ce tag.</p>
+        <a href="/blog" class="inline-block mt-4 text-accent font-medium hover:underline">
+          Voir tous les articles →
+        </a>
+      </div>
+    )
+  }
+</PageLayout>

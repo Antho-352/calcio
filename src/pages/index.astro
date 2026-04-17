@@ -1,17 +1,84 @@
 ---
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPosts } from '@/lib/wordpress';
+import { generateWebSiteSchema, renderJsonLd } from '@/lib/seo';
 
+// Fetch latest posts (placeholder data if WordPress not configured yet)
+let posts: any[] = [];
+try {
+  const result = await getPosts(6);
+  posts = result.posts.map((post) => ({
+    title: post.title,
+    excerpt: post.excerpt,
+    slug: post.slug,
+    image: post.featuredImage?.node.sourceUrl,
+    date: post.date,
+    category: post.categories?.nodes[0]?.name,
+  }));
+} catch (error) {
+  // WordPress not configured yet, use placeholder
+  console.warn('WordPress not configured, using placeholder data');
+  posts = [
+    {
+      title: 'Bienvenue sur Vai Calcio',
+      excerpt: 'Le site est en construction. Bientôt toute l\'actualité du football italien.',
+      slug: 'bienvenue',
+      date: new Date().toISOString(),
+      category: 'Actualités',
+    },
+  ];
+}
+
+const siteUrl = Astro.site?.toString() || 'https://vai-calcio.fr';
+const websiteSchema = generateWebSiteSchema(siteUrl);
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<ArticleLayout
+  title="Vai Calcio - Actualité du football italien"
+  description="Toute l'actualité du football italien : Serie A, Coppa Italia, Squadra Azzurra. News, résultats, classements et analyses."
+>
+  <!-- JSON-LD -->
+  <script type="application/ld+json" set:html={renderJsonLd(websiteSchema)} />
+
+  <!-- Hero Section -->
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold text-text mb-4">
+      Vai Calcio
+    </h1>
+    <p class="text-lg text-text/70">
+      Toute l'actualité du football italien : Serie A, Coppa Italia, Squadra
+      Azzurra.
+    </p>
+  </div>
+
+  <!-- Latest Articles -->
+  <section class="mb-12">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-condensed font-semibold">Derniers articles</h2>
+      <a href="/blog" class="text-accent font-medium hover:underline">
+        Voir tous les articles →
+      </a>
+    </div>
+
+    <ArticleGrid articles={posts} />
+  </section>
+
+  <!-- Placeholder for match scores banner -->
+  <section class="mb-12">
+    <div class="card p-6">
+      <h2 class="text-xl font-condensed font-semibold mb-4">
+        Résultats & Calendrier
+      </h2>
+      <p class="text-sm text-text/70">
+        Les derniers résultats et prochains matchs seront bientôt disponibles.
+      </p>
+      <a
+        href="/resultats-calendrier"
+        class="inline-block mt-4 text-accent font-medium hover:underline"
+      >
+        Voir le calendrier complet →
+      </a>
+    </div>
+  </section>
+</ArticleLayout>

@@ -1,0 +1,105 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+---
+
+<PageLayout
+  title="Mentions légales - Vai Calcio"
+  description="Mentions légales du site Vai Calcio"
+  breadcrumbs={[{ label: 'Mentions légales', href: '/mentions-legales' }]}
+>
+  <div class="prose prose-lg max-w-none">
+    <h1 class="text-4xl font-condensed font-bold mb-8">Mentions légales</h1>
+
+    <section class="mb-8">
+      <h2>Éditeur du site</h2>
+      <p>
+        Le site <strong>vai-calcio.fr</strong> est édité par :<br />
+        Anthony Russo<br />
+        Email : <a href="mailto:contact@vai-calcio.fr">contact@vai-calcio.fr</a>
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Directeur de la publication</h2>
+      <p>Anthony Russo</p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Hébergement</h2>
+      <p>
+        Le site est hébergé par :<br />
+        OVH SAS<br />
+        2 rue Kellermann<br />
+        59100 Roubaix, France<br />
+        Téléphone : 1007
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Propriété intellectuelle</h2>
+      <p>
+        L'ensemble du contenu de ce site (textes, images, vidéos, graphismes,
+        logos, etc.) est la propriété exclusive de Vai Calcio, sauf mention
+        contraire.
+      </p>
+      <p>
+        Toute reproduction, distribution, modification, adaptation,
+        retransmission ou publication de ces différents éléments est strictement
+        interdite sans l'accord écrit de Vai Calcio.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Protection des données personnelles</h2>
+      <p>
+        Conformément au Règlement Général sur la Protection des Données (RGPD),
+        vous disposez d'un droit d'accès, de rectification, de suppression et
+        d'opposition aux données personnelles vous concernant.
+      </p>
+      <p>
+        Pour exercer ces droits, vous pouvez nous contacter à l'adresse :
+        <a href="mailto:contact@vai-calcio.fr">contact@vai-calcio.fr</a>
+      </p>
+      <p>
+        Les données collectées via la newsletter ne sont utilisées que pour
+        l'envoi de nos actualités et ne sont en aucun cas transmises à des tiers.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Cookies</h2>
+      <p>
+        Ce site n'utilise pas de cookies de tracking ou de publicité. Seuls des
+        cookies techniques nécessaires au bon fonctionnement du site peuvent être
+        utilisés.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2>Crédits</h2>
+      <p>
+        Données sportives fournies par API-Football, Football-data.org et
+        TheSportsDB.<br />
+        Logos et images d'équipes : TheSportsDB (licence libre).
+      </p>
+    </section>
+  </div>
+</PageLayout>
+
+<style>
+  :global(.prose h2) {
+    @apply text-2xl font-condensed font-semibold mt-8 mb-4;
+  }
+
+  :global(.prose p) {
+    @apply mb-4 leading-relaxed;
+  }
+
+  :global(.prose a) {
+    @apply text-accent hover:underline;
+  }
+
+  :global(.prose section) {
+    @apply pb-6 border-b border-separator last:border-0;
+  }
+</style>

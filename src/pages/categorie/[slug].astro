@@ -1,0 +1,65 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import ArticleGrid from '@/components/ArticleGrid.astro';
+import { getPostsByCategory, getCategoryBySlug } from '@/lib/wordpress';
+
+export const prerender = true;
+
+const { slug } = Astro.params;
+
+// Fetch category and posts
+let category: any = null;
+let posts: any[] = [];
+
+try {
+  category = await getCategoryBySlug(slug!);
+  if (category) {
+    const result = await getPostsByCategory(slug!, 12, 0);
+    posts = result.posts.map((post) => ({
+      title: post.title,
+      excerpt: post.excerpt,
+      slug: post.slug,
+      image: post.featuredImage?.node.sourceUrl,
+      date: post.date,
+      category: category.name,
+    }));
+  }
+} catch (error) {
+  console.error('Failed to fetch category or posts:', error);
+}
+
+if (!category) {
+  return Astro.redirect('/404');
+}
+---
+
+<PageLayout
+  title={`${category.name} - Vai Calcio`}
+  description={`Tous les articles de la catégorie "${category.name}"`}
+  breadcrumbs={[
+    { label: 'Blog', href: '/blog' },
+    { label: category.name, href: `/categorie/${category.slug}` },
+  ]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl font-condensed font-bold mb-4">
+      {category.name}
+    </h1>
+    <p class="text-lg text-text/70">
+      {category.count} {category.count > 1 ? 'articles' : 'article'}
+    </p>
+  </div>
+
+  {
+    posts.length > 0 ? (
+      <ArticleGrid articles={posts} />
+    ) : (
+      <div class="card p-8 text-center">
+        <p class="text-text/70">Aucun article trouvé dans cette catégorie.</p>
+        <a href="/blog" class="inline-block mt-4 text-accent font-medium hover:underline">
+          Voir tous les articles →
+        </a>
+      </div>
+    )
+  }
+</PageLayout>
