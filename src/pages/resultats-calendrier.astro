@@ -1,0 +1,232 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getMatches } from '@/lib/football-api';
+import { formatDate } from '@/lib/utils';
+
+// Fetch matches
+const recentMatches = await getMatches(undefined, 'finished');
+const upcomingMatches = await getMatches(undefined, 'scheduled');
+
+const formatMatchDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return {
+    full: formatDate(dateString, 'EEEE d MMMM yyyy'),
+    time: date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+  };
+};
+---
+
+<PageLayout
+  title="Résultats & Calendrier Serie A - Vai Calcio"
+  description="Tous les résultats et le calendrier complet de la Serie A"
+  breadcrumbs={[{ label: 'Résultats & Calendrier', href: '/resultats-calendrier' }]}
+>
+  <h1 class="text-4xl font-condensed font-bold mb-8">
+    Résultats & Calendrier
+  </h1>
+
+  <!-- Tabs -->
+  <div class="mb-8 border-b border-separator">
+    <div class="flex gap-4">
+      <button
+        class="px-6 py-3 font-semibold border-b-2 border-accent text-accent"
+        data-tab="results"
+      >
+        Résultats
+      </button>
+      <button
+        class="px-6 py-3 font-semibold border-b-2 border-transparent text-text/70 hover:text-accent transition-colors"
+        data-tab="fixtures"
+      >
+        Prochains matchs
+      </button>
+    </div>
+  </div>
+
+  <!-- Results Tab -->
+  <div id="results-tab" class="space-y-4">
+    <h2 class="text-2xl font-condensed font-semibold mb-6">
+      Derniers résultats
+    </h2>
+
+    {
+      recentMatches.length > 0 ? (
+        <div class="space-y-3">
+          {recentMatches.map((match) => {
+            const date = formatMatchDate(match.date);
+            return (
+              <div class="card p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-text/60">
+                    Journée {match.round} • {date.full}
+                  </span>
+                  <span class="text-xs text-accent font-medium">TERMINÉ</span>
+                </div>
+
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                  {/* Home Team */}
+                  <div class="flex items-center gap-3 justify-end">
+                    <span class="font-semibold text-lg text-right">
+                      {match.homeTeam.name}
+                    </span>
+                    {match.homeTeam.logo && (
+                      <img
+                        src={match.homeTeam.logo}
+                        alt={match.homeTeam.name}
+                        class="w-10 h-10 object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+
+                  {/* Score */}
+                  <div class="flex items-center gap-4 px-6">
+                    <span class="text-3xl font-bold">
+                      {match.score?.home ?? '-'}
+                    </span>
+                    <span class="text-2xl text-text/40">-</span>
+                    <span class="text-3xl font-bold">
+                      {match.score?.away ?? '-'}
+                    </span>
+                  </div>
+
+                  {/* Away Team */}
+                  <div class="flex items-center gap-3">
+                    {match.awayTeam.logo && (
+                      <img
+                        src={match.awayTeam.logo}
+                        alt={match.awayTeam.name}
+                        class="w-10 h-10 object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                    <span class="font-semibold text-lg">
+                      {match.awayTeam.name}
+                    </span>
+                  </div>
+                </div>
+
+                {match.venue && (
+                  <div class="mt-3 text-xs text-text/60 text-center">
+                    {match.venue}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="card p-8 text-center">
+          <p class="text-text/70">Aucun résultat disponible</p>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Fixtures Tab -->
+  <div id="fixtures-tab" class="space-y-4 hidden">
+    <h2 class="text-2xl font-condensed font-semibold mb-6">
+      Prochains matchs
+    </h2>
+
+    {
+      upcomingMatches.length > 0 ? (
+        <div class="space-y-3">
+          {upcomingMatches.map((match) => {
+            const date = formatMatchDate(match.date);
+            return (
+              <div class="card p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-text/60">
+                    Journée {match.round} • {date.full}
+                  </span>
+                  <span class="text-xs text-accent font-medium">{date.time}</span>
+                </div>
+
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                  {/* Home Team */}
+                  <div class="flex items-center gap-3 justify-end">
+                    <span class="font-semibold text-lg text-right">
+                      {match.homeTeam.name}
+                    </span>
+                    {match.homeTeam.logo && (
+                      <img
+                        src={match.homeTeam.logo}
+                        alt={match.homeTeam.name}
+                        class="w-10 h-10 object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+
+                  {/* VS */}
+                  <div class="px-6">
+                    <span class="text-xl font-semibold text-text/40">VS</span>
+                  </div>
+
+                  {/* Away Team */}
+                  <div class="flex items-center gap-3">
+                    {match.awayTeam.logo && (
+                      <img
+                        src={match.awayTeam.logo}
+                        alt={match.awayTeam.name}
+                        class="w-10 h-10 object-contain"
+                        loading="lazy"
+                      />
+                    )}
+                    <span class="font-semibold text-lg">
+                      {match.awayTeam.name}
+                    </span>
+                  </div>
+                </div>
+
+                {match.venue && (
+                  <div class="mt-3 text-xs text-text/60 text-center">
+                    {match.venue}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="card p-8 text-center">
+          <p class="text-text/70">Aucun match à venir</p>
+        </div>
+      )
+    }
+  </div>
+</PageLayout>
+
+<script>
+  // Tab switching
+  const tabs = document.querySelectorAll('[data-tab]');
+  const resultsTab = document.getElementById('results-tab');
+  const fixturesTab = document.getElementById('fixtures-tab');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.getAttribute('data-tab');
+
+      // Update button styles
+      tabs.forEach((t) => {
+        if (t === tab) {
+          t.classList.add('border-accent', 'text-accent');
+          t.classList.remove('border-transparent', 'text-text/70');
+        } else {
+          t.classList.remove('border-accent', 'text-accent');
+          t.classList.add('border-transparent', 'text-text/70');
+        }
+      });
+
+      // Show/hide content
+      if (tabName === 'results') {
+        resultsTab?.classList.remove('hidden');
+        fixturesTab?.classList.add('hidden');
+      } else {
+        resultsTab?.classList.add('hidden');
+        fixturesTab?.classList.remove('hidden');
+      }
+    });
+  });
+</script>

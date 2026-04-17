@@ -1,0 +1,126 @@
+---
+import { getMatches } from '@/lib/football-api';
+
+// Fetch recent results and upcoming matches
+const recentMatches = await getMatches(undefined, 'finished');
+const upcomingMatches = await getMatches(undefined, 'scheduled');
+
+const lastResults = recentMatches.slice(0, 5);
+const nextFixtures = upcomingMatches.slice(0, 5);
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+---
+
+<div class="bg-card border-y border-separator py-4 overflow-hidden">
+  <div class="container-custom">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Recent Results -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-condensed font-semibold text-sm uppercase text-text/70">
+            Derniers résultats
+          </h3>
+          <a href="/resultats-calendrier" class="text-xs text-accent hover:underline">
+            Tous les résultats →
+          </a>
+        </div>
+
+        <div class="space-y-2">
+          {lastResults.map((match) => (
+            <div class="flex items-center justify-between text-sm py-2 border-b border-separator last:border-0">
+              <div class="flex items-center gap-2 flex-1">
+                {match.homeTeam.logo && (
+                  <img
+                    src={match.homeTeam.logo}
+                    alt={match.homeTeam.name}
+                    class="w-5 h-5 object-contain"
+                    loading="lazy"
+                  />
+                )}
+                <span class="font-medium truncate">{match.homeTeam.name}</span>
+              </div>
+
+              <div class="flex items-center gap-3 px-4">
+                <span class="font-bold text-lg">
+                  {match.score?.home ?? '-'}
+                </span>
+                <span class="text-text/40">-</span>
+                <span class="font-bold text-lg">
+                  {match.score?.away ?? '-'}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 flex-1 justify-end">
+                <span class="font-medium truncate text-right">{match.awayTeam.name}</span>
+                {match.awayTeam.logo && (
+                  <img
+                    src={match.awayTeam.logo}
+                    alt={match.awayTeam.name}
+                    class="w-5 h-5 object-contain"
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Upcoming Fixtures -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-condensed font-semibold text-sm uppercase text-text/70">
+            Prochains matchs
+          </h3>
+          <a href="/resultats-calendrier" class="text-xs text-accent hover:underline">
+            Calendrier complet →
+          </a>
+        </div>
+
+        <div class="space-y-2">
+          {nextFixtures.map((match) => (
+            <div class="flex items-center justify-between text-sm py-2 border-b border-separator last:border-0">
+              <div class="flex items-center gap-2 flex-1">
+                {match.homeTeam.logo && (
+                  <img
+                    src={match.homeTeam.logo}
+                    alt={match.homeTeam.name}
+                    class="w-5 h-5 object-contain"
+                    loading="lazy"
+                  />
+                )}
+                <span class="font-medium truncate">{match.homeTeam.name}</span>
+              </div>
+
+              <div class="px-4 text-center">
+                <span class="text-xs text-text/60 whitespace-nowrap">
+                  {formatDate(match.date)}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 flex-1 justify-end">
+                <span class="font-medium truncate text-right">{match.awayTeam.name}</span>
+                {match.awayTeam.logo && (
+                  <img
+                    src={match.awayTeam.logo}
+                    alt={match.awayTeam.name}
+                    class="w-5 h-5 object-contain"
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
