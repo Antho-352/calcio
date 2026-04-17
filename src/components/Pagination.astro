@@ -1,0 +1,84 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  basePath: string;
+}
+
+const { currentPage, totalPages, basePath } = Astro.props;
+
+const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+// Show max 7 page numbers
+const maxVisible = 7;
+let visiblePages = pages;
+
+if (totalPages > maxVisible) {
+  const start = Math.max(1, currentPage - 3);
+  const end = Math.min(totalPages, currentPage + 3);
+
+  visiblePages = pages.slice(start - 1, end);
+
+  // Add ellipsis logic
+  if (start > 1) {
+    visiblePages = [1, -1, ...visiblePages]; // -1 represents ellipsis
+  }
+  if (end < totalPages) {
+    visiblePages = [...visiblePages, -2, totalPages]; // -2 represents ellipsis
+  }
+}
+---
+
+<nav aria-label="Pagination" class="flex justify-center items-center gap-2">
+  <!-- Previous Button -->
+  {
+    currentPage > 1 ? (
+      <a
+        href={`${basePath}${currentPage > 2 ? `/${currentPage - 1}` : ''}`}
+        class="px-4 py-2 border border-separator rounded-sm text-sm font-medium hover:bg-accent-light hover:border-accent transition-colors"
+      >
+        ← Précédent
+      </a>
+    ) : (
+      <span class="px-4 py-2 border border-separator rounded-sm text-sm font-medium text-text/40 cursor-not-allowed">
+        ← Précédent
+      </span>
+    )
+  }
+
+  <!-- Page Numbers -->
+  {
+    visiblePages.map((page) =>
+      page === -1 || page === -2 ? (
+        <span class="px-2 text-text/40">...</span>
+      ) : page === currentPage ? (
+        <span class="px-4 py-2 bg-accent text-white rounded-sm text-sm font-medium">
+          {page}
+        </span>
+      ) : (
+        <a
+          href={`${basePath}${page > 1 ? `/${page}` : ''}`}
+          class="px-4 py-2 border border-separator rounded-sm text-sm font-medium hover:bg-accent-light hover:border-accent transition-colors"
+        >
+          {page}
+        </a>
+      )
+    )
+  }
+
+  <!-- Next Button -->
+  {
+    currentPage < totalPages ? (
+      <a
+        href={`${basePath}/${currentPage + 1}`}
+        class="px-4 py-2 border border-separator rounded-sm text-sm font-medium hover:bg-accent-light hover:border-accent transition-colors"
+      >
+        Suivant →
+      </a>
+    ) : (
+      <span class="px-4 py-2 border border-separator rounded-sm text-sm font-medium text-text/40 cursor-not-allowed">
+        Suivant →
+      </span>
+    )
+  }
+</nav>

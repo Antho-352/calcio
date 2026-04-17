@@ -1,0 +1,31 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import Breadcrumb from '@/components/Breadcrumb.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  breadcrumbs?: Array<{ label: string; href: string }>;
+}
+
+const { title, description, image, breadcrumbs } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} image={image}>
+  <Header />
+
+  {breadcrumbs && (
+    <div class="container-custom py-4">
+      <Breadcrumb items={breadcrumbs} />
+    </div>
+  )}
+
+  <main class="container-custom py-8">
+    <slot />
+  </main>
+
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,113 @@
+---
+import NewsletterForm from './NewsletterForm.astro';
+
+const currentYear = new Date().getFullYear();
+
+const footerLinks = {
+  navigation: [
+    { label: 'Accueil', href: '/' },
+    { label: 'Serie A', href: '/serie-a' },
+    { label: 'Classement', href: '/classement' },
+    { label: 'Résultats & Calendrier', href: '/resultats-calendrier' },
+  ],
+  resources: [
+    { label: 'Formations Probables', href: '/formations-probables' },
+    { label: 'Transferts', href: '/transferts' },
+    { label: 'Coppa Italia', href: '/coppa-italia' },
+    { label: 'Squadra Azzurra', href: '/equipe-nationale' },
+  ],
+  legal: [
+    { label: 'À propos', href: '/a-propos' },
+    { label: 'Contact', href: '/contact' },
+    { label: 'Mentions légales', href: '/mentions-legales' },
+  ],
+};
+---
+
+<footer class="bg-card border-t border-separator mt-16">
+  <div class="container-custom py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <!-- Brand & Newsletter -->
+      <div class="lg:col-span-2">
+        <a href="/" class="inline-block mb-4">
+          <h2 class="text-2xl font-condensed font-bold text-accent">
+            Vai Calcio
+          </h2>
+        </a>
+        <p class="text-sm text-text/70 mb-6">
+          Toute l'actualité du football italien : Serie A, Coppa Italia,
+          Squadra Azzurra. News, résultats, classements et analyses.
+        </p>
+
+        <!-- Newsletter -->
+        <div class="max-w-md">
+          <h3 class="text-sm font-semibold mb-3">Newsletter</h3>
+          <NewsletterForm />
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <div>
+        <h3 class="text-sm font-semibold mb-3">Navigation</h3>
+        <ul class="space-y-2">
+          {
+            footerLinks.navigation.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm text-text/70 hover:text-accent transition-colors"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+
+        <h3 class="text-sm font-semibold mb-3 mt-6">Ressources</h3>
+        <ul class="space-y-2">
+          {
+            footerLinks.resources.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm text-text/70 hover:text-accent transition-colors"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- Legal Links -->
+      <div>
+        <h3 class="text-sm font-semibold mb-3">Informations</h3>
+        <ul class="space-y-2">
+          {
+            footerLinks.legal.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-sm text-text/70 hover:text-accent transition-colors"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="mt-12 pt-8 border-t border-separator">
+      <p class="text-sm text-center text-text/70">
+        &copy; {currentYear} Vai Calcio. Tous droits réservés.
+        <br />
+        Directeur de publication : Anthony Russo
+      </p>
+    </div>
+  </div>
+</footer>

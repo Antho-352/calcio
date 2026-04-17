@@ -1,0 +1,75 @@
+---
+// Newsletter form component
+---
+
+<div class="newsletter-form">
+  <form id="newsletter-form" class="flex gap-2">
+    <input
+      type="email"
+      name="email"
+      placeholder="Votre email"
+      required
+      class="flex-1 px-4 py-2 border border-separator rounded-sm text-sm focus:outline-none focus:border-accent"
+    />
+    <button
+      type="submit"
+      class="px-6 py-2 bg-accent text-white text-sm font-medium rounded-sm hover:bg-accent/90 transition-colors"
+    >
+      S'abonner
+    </button>
+  </form>
+
+  <div id="newsletter-message" class="mt-2 text-sm hidden"></div>
+</div>
+
+<script>
+  const form = document.getElementById('newsletter-form') as HTMLFormElement;
+  const message = document.getElementById('newsletter-message');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const email = formData.get('email') as string;
+
+    if (!email || !email.includes('@')) {
+      showMessage('Veuillez entrer une adresse email valide.', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showMessage('Merci ! Vous êtes inscrit à notre newsletter.', 'success');
+        form.reset();
+      } else {
+        showMessage(data.error || 'Une erreur est survenue.', 'error');
+      }
+    } catch (error) {
+      showMessage('Une erreur est survenue. Veuillez réessayer.', 'error');
+    }
+  });
+
+  function showMessage(text: string, type: 'success' | 'error') {
+    if (!message) return;
+
+    message.textContent = text;
+    message.className = `mt-2 text-sm ${
+      type === 'success' ? 'text-accent' : 'text-red-600'
+    }`;
+    message.classList.remove('hidden');
+
+    setTimeout(() => {
+      message.classList.add('hidden');
+    }, 5000);
+  }
+</script>
