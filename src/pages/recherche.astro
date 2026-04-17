@@ -1,0 +1,105 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+---
+
+<PageLayout
+  title="Recherche - Vai Calcio"
+  description="Rechercher des articles sur le football italien"
+  breadcrumbs={[{ label: 'Recherche', href: '/recherche' }]}
+>
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-4xl font-condensed font-bold mb-8">Rechercher</h1>
+
+    <!-- Pagefind Search UI will be injected here -->
+    <div id="search" class="mb-8"></div>
+
+    <div class="text-sm text-text/70">
+      <p>
+        Recherchez parmi tous les articles, analyses et actualités du football
+        italien.
+      </p>
+    </div>
+  </div>
+</PageLayout>
+
+<script>
+  // @ts-ignore
+  import { PagefindUI } from '@pagefind/default-ui';
+
+  // Get search query from URL
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get('q') || '';
+
+  // Initialize Pagefind UI
+  const pagefind = new PagefindUI({
+    element: '#search',
+    showSubResults: true,
+    showImages: false,
+    excerptLength: 30,
+    autofocus: true,
+    translations: {
+      placeholder: 'Rechercher des articles...',
+      clear_search: 'Effacer',
+      load_more: 'Charger plus de résultats',
+      search_label: 'Rechercher sur ce site',
+      filters_label: 'Filtres',
+      zero_results: 'Aucun résultat pour [SEARCH_TERM]',
+      many_results: '[COUNT] résultats pour [SEARCH_TERM]',
+      one_result: '[COUNT] résultat pour [SEARCH_TERM]',
+      alt_search: 'Aucun résultat pour [SEARCH_TERM]. Affichage des résultats pour [DIFFERENT_TERM]',
+      search_suggestion: 'Aucun résultat pour [SEARCH_TERM]. Essayez une des recherches suivantes :',
+      searching: 'Recherche en cours...',
+    },
+  });
+
+  // If there's a query parameter, trigger search
+  if (query) {
+    // Wait for Pagefind to initialize, then set the search value
+    setTimeout(() => {
+      const searchInput = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.value = query;
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }, 100);
+  }
+</script>
+
+<style is:global>
+  /* Custom Pagefind styles */
+  .pagefind-ui__search-input {
+    @apply w-full px-4 py-3 border border-separator rounded-sm text-base focus:outline-none focus:border-accent;
+  }
+
+  .pagefind-ui__search-clear {
+    @apply text-text/60 hover:text-accent;
+  }
+
+  .pagefind-ui__result {
+    @apply border-b border-separator py-4;
+  }
+
+  .pagefind-ui__result:last-child {
+    @apply border-b-0;
+  }
+
+  .pagefind-ui__result-title {
+    @apply font-condensed font-semibold text-lg mb-2;
+  }
+
+  .pagefind-ui__result-link {
+    @apply text-text hover:text-accent transition-colors;
+  }
+
+  .pagefind-ui__result-excerpt {
+    @apply text-sm text-text/70 leading-relaxed;
+  }
+
+  .pagefind-ui__button {
+    @apply px-6 py-2 bg-accent text-white rounded-sm hover:bg-accent/90 transition-colors;
+  }
+
+  .pagefind-ui__message {
+    @apply text-text/70 py-4;
+  }
+</style>

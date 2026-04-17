@@ -121,4 +121,19 @@ const currentPath = Astro.url.pathname;
   toggle?.addEventListener('click', () => {
     menu?.classList.toggle('hidden');
   });
+
+  // Search functionality - redirect to /recherche
+  const searchInputs = document.querySelectorAll('input[type="search"]');
+
+  searchInputs.forEach((input) => {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = (e.target as HTMLInputElement).value.trim();
+        if (query) {
+          window.location.href = `/recherche?q=${encodeURIComponent(query)}`;
+        }
+      }
+    });
+  });
 </script>

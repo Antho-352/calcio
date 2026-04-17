@@ -1,0 +1,191 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getPosts, getCategories, getTags } from '@/lib/wordpress';
+
+// Fetch all content for sitemap
+let posts: any[] = [];
+let categories: any[] = [];
+let tags: any[] = [];
+
+try {
+  const postsResult = await getPosts(100);
+  posts = postsResult.posts;
+  categories = await getCategories();
+  tags = await getTags();
+} catch (error) {
+  console.warn('Failed to fetch sitemap data');
+}
+
+const mainPages = [
+  { title: 'Accueil', href: '/', description: 'Page d\'accueil' },
+  { title: 'Serie A', href: '/serie-a', description: 'Hub éditorial Serie A' },
+  { title: 'Classement', href: '/classement', description: 'Classement de la Serie A' },
+  { title: 'Résultats & Calendrier', href: '/resultats-calendrier', description: 'Tous les matchs' },
+  { title: 'Formations Probables', href: '/formations-probables', description: 'Compositions d\'équipes' },
+  { title: 'Transferts', href: '/transferts', description: 'Mercato et transferts' },
+  { title: 'Coppa Italia', href: '/coppa-italia', description: 'Coupe d\'Italie' },
+  { title: 'Squadra Azzurra', href: '/equipe-nationale', description: 'Équipe nationale italienne' },
+  { title: 'Blog', href: '/blog', description: 'Tous les articles' },
+  { title: 'Recherche', href: '/recherche', description: 'Rechercher sur le site' },
+];
+
+const legalPages = [
+  { title: 'À propos', href: '/a-propos' },
+  { title: 'Contact', href: '/contact' },
+  { title: 'Mentions légales', href: '/mentions-legales' },
+];
+---
+
+<PageLayout
+  title="Plan du site - Vai Calcio"
+  description="Plan complet du site Vai Calcio"
+  breadcrumbs={[{ label: 'Plan du site', href: '/sitemap' }]}
+>
+  <h1 class="text-4xl font-condensed font-bold mb-8">Plan du site</h1>
+
+  <!-- Main Pages -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
+      Pages principales
+    </h2>
+    <ul class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {
+        mainPages.map((page) => (
+          <li class="card p-4 hover:shadow-md transition-shadow">
+            <a href={page.href} class="block">
+              <h3 class="font-semibold text-accent hover:underline mb-1">
+                {page.title}
+              </h3>
+              {page.description && (
+                <p class="text-sm text-text/70">{page.description}</p>
+              )}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- Recent Articles -->
+  {
+    posts.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
+          Articles récents
+        </h2>
+        <ul class="space-y-2">
+          {posts.slice(0, 20).map((post: any) => (
+            <li>
+              <a
+                href={`/blog/${post.slug}`}
+                class="text-accent hover:underline"
+              >
+                {post.title}
+              </a>
+              <span class="text-sm text-text/60 ml-2">
+                ({new Date(post.date).toLocaleDateString('fr-FR')})
+              </span>
+            </li>
+          ))}
+        </ul>
+        {posts.length > 20 && (
+          <a
+            href="/blog"
+            class="inline-block mt-4 text-accent font-medium hover:underline"
+          >
+            Voir tous les articles →
+          </a>
+        )}
+      </section>
+    )
+  }
+
+  <!-- Categories -->
+  {
+    categories.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
+          Catégories
+        </h2>
+        <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {categories
+            .filter((cat: any) => cat.count > 0)
+            .map((category: any) => (
+              <li>
+                <a
+                  href={`/categorie/${category.slug}`}
+                  class="block card p-3 hover:shadow-md transition-shadow"
+                >
+                  <span class="font-medium text-accent hover:underline">
+                    {category.name}
+                  </span>
+                  <span class="text-sm text-text/60 ml-2">
+                    ({category.count})
+                  </span>
+                </a>
+              </li>
+            ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <!-- Tags -->
+  {
+    tags.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
+          Tags
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          {tags
+            .filter((tag: any) => tag.count > 0)
+            .slice(0, 50)
+            .map((tag: any) => (
+              <a
+                href={`/tag/${tag.slug}`}
+                class="px-3 py-1 bg-accent-light text-accent text-sm rounded-sm hover:bg-accent hover:text-white transition-colors"
+              >
+                {tag.name} ({tag.count})
+              </a>
+            ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Legal Pages -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
+      Informations
+    </h2>
+    <ul class="space-y-2">
+      {
+        legalPages.map((page) => (
+          <li>
+            <a href={page.href} class="text-accent hover:underline">
+              {page.title}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- XML Sitemap Link -->
+  <section class="card p-6 bg-accent-light">
+    <h2 class="text-xl font-condensed font-semibold mb-2">
+      Sitemap XML pour les moteurs de recherche
+    </h2>
+    <p class="text-sm text-text/70 mb-3">
+      Le sitemap XML est utilisé par Google et les autres moteurs de recherche
+      pour indexer le site.
+    </p>
+    <a
+      href="/sitemap-index.xml"
+      class="text-accent font-medium hover:underline"
+    >
+      Voir le sitemap XML →
+    </a>
+  </section>
+</PageLayout>
