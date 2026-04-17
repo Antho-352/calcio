@@ -1,0 +1,115 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import StandingsTable from '@/components/StandingsTable.astro';
+import { getStandings } from '@/lib/football-api';
+import { generateBreadcrumbSchema, renderJsonLd } from '@/lib/seo';
+
+// Fetch standings
+const standings = await getStandings();
+
+const siteUrl = Astro.site?.toString() || 'https://vai-calcio.fr';
+const breadcrumbSchema = generateBreadcrumbSchema(
+  [{ label: 'Classement', href: '/classement' }],
+  siteUrl
+);
+
+const lastUpdate = new Date().toLocaleDateString('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+---
+
+<PageLayout
+  title="Classement Serie A - Vai Calcio"
+  description="Classement complet de la Serie A en temps réel : points, buts, différence de buts et forme des équipes."
+  breadcrumbs={[{ label: 'Classement', href: '/classement' }]}
+>
+  <!-- JSON-LD -->
+  <script type="application/ld+json" set:html={renderJsonLd(breadcrumbSchema)} />
+
+  <div class="mb-8">
+    <h1 class="text-4xl font-condensed font-bold mb-4">
+      Classement Serie A
+    </h1>
+    <p class="text-lg text-text/70">
+      Classement complet de la Serie A 2024-2025
+    </p>
+    <p class="text-sm text-text/60 mt-2">
+      Dernière mise à jour : {lastUpdate}
+    </p>
+  </div>
+
+  <!-- Standings Table -->
+  <div class="card p-6 mb-8">
+    <StandingsTable standings={standings} />
+  </div>
+
+  <!-- Additional Info -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card p-6">
+      <h2 class="text-xl font-condensed font-semibold mb-4">
+        Qualification européenne
+      </h2>
+      <ul class="space-y-2 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="text-blue-500 font-bold">1-4 :</span>
+          <span class="text-text/80">
+            Qualification directe pour la phase de groupes de la Ligue des
+            Champions
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-green-500 font-bold">5-6 :</span>
+          <span class="text-text/80">
+            Qualification pour la Ligue Europa (phase de groupes)
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-orange-500 font-bold">7 :</span>
+          <span class="text-text/80">
+            Qualification pour la Ligue Europa Conférence (barrages)
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card p-6">
+      <h2 class="text-xl font-condensed font-semibold mb-4">Relégation</h2>
+      <ul class="space-y-2 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="text-red-500 font-bold">18-20 :</span>
+          <span class="text-text/80">
+            Relégation automatique en Serie B pour la saison suivante
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Links to related pages -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/resultats-calendrier" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Résultats & Calendrier</h3>
+      <p class="text-sm text-text/70">
+        Tous les matchs de la Serie A, résultats et prochaines rencontres
+      </p>
+    </a>
+
+    <a href="/serie-a" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Actualités Serie A</h3>
+      <p class="text-sm text-text/70">
+        Toutes les news, analyses et reportages sur le championnat italien
+      </p>
+    </a>
+
+    <a href="/formations-probables" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Formations Probables</h3>
+      <p class="text-sm text-text/70">
+        Les compositions d'équipes avant chaque journée
+      </p>
+    </a>
+  </div>
+</PageLayout>

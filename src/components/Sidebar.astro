@@ -1,38 +1,44 @@
 ---
 import NewsletterForm from './NewsletterForm.astro';
+import StandingsTable from './StandingsTable.astro';
+import { getStandings } from '@/lib/football-api';
+import { getPosts } from '@/lib/wordpress';
 
-// Sidebar component
-// TODO: Fetch actual data from WordPress and API
-// For now, placeholder content
+// Fetch standings
+const standings = await getStandings();
+const topStandings = standings.slice(0, 8); // Top 8 teams
 
-const latestNews = [
-  {
-    title: 'Article récent 1',
-    href: '/blog/article-1',
-    date: '2026-04-17',
-  },
-  {
-    title: 'Article récent 2',
-    href: '/blog/article-2',
-    date: '2026-04-16',
-  },
-  {
-    title: 'Article récent 3',
-    href: '/blog/article-3',
-    date: '2026-04-15',
-  },
-];
+// Fetch latest news
+let latestNews: any[] = [];
+try {
+  const result = await getPosts(3);
+  latestNews = result.posts.map((post) => ({
+    title: post.title,
+    href: `/blog/${post.slug}`,
+    date: new Date(post.date).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    }),
+  }));
+} catch (error) {
+  // Fallback placeholder
+  latestNews = [
+    { title: 'Articles à venir', href: '/blog', date: 'Bientôt' },
+  ];
+}
 ---
 
 <div class="space-y-6">
   <!-- Classement Widget -->
   <div class="card">
-    <div class="p-4 border-b border-separator">
+    <div class="p-4 border-b border-separator flex items-center justify-between">
       <h3 class="font-condensed font-semibold text-lg">Classement Serie A</h3>
+      <a href="/classement" class="text-xs text-accent hover:underline">
+        Voir tout →
+      </a>
     </div>
     <div class="p-4">
-      <p class="text-sm text-text/70">Classement à venir...</p>
-      <!-- TODO: Replace with actual standings table -->
+      <StandingsTable standings={topStandings} compact={true} />
     </div>
   </div>
 
