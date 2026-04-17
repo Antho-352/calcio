@@ -49,4 +49,4 @@ Voir `CLAUDE.md` pour la documentation complète du projet.
 ./deploy.sh
 ```
 
-Le site tourne sur PM2 (port 4321) derrière Nginx reverse proxy.
+Le site tourne sur PM2 (port 5432) derrière Nginx reverse proxy.

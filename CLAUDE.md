@@ -403,7 +403,7 @@ module.exports = {
     name: 'vai-calcio',
     cwd: '/var/www/vai-calcio',
     script: 'node_modules/.bin/astro',
-    args: 'dev --host 0.0.0.0 --port 4321',
+    args: 'dev --host 0.0.0.0 --port 5432',
     instances: 1,
     exec_mode: 'fork',
     watch: false,
