@@ -1,16 +1,14 @@
 ---
 import PageLayout from '@/layouts/PageLayout.astro';
 import ArticleGrid from '@/components/ArticleGrid.astro';
-import StandingsTable from '@/components/StandingsTable.astro';
 import { getPostsByCategory } from '@/lib/wordpress';
-import { getStandings } from '@/lib/football-api';
 
-// Fetch Serie A articles
+// Fetch all Serie A articles
 let posts: any[] = [];
 let total = 0;
 
 try {
-  const result = await getPostsByCategory('serie-a', 12, 0);
+  const result = await getPostsByCategory('serie-a', 50, 0);
   posts = result.posts.map((post) => ({
     title: post.title,
     excerpt: post.excerpt,
@@ -32,114 +30,86 @@ try {
     },
   ];
 }
-
-// Fetch standings for widget
-const standings = await getStandings();
-const topStandings = standings.slice(0, 5);
 ---
 
 <PageLayout
-  title="Serie A - Actualités et Analyses - Vai Calcio"
-  description="Toute l'actualité de la Serie A : news, analyses, interviews, classement et résultats du championnat italien."
-  breadcrumbs={[{ label: 'Serie A', href: '/serie-a' }]}
+  title="Actualités Serie A - Vai Calcio"
+  description="Toute l'actualité de la Serie A : news, analyses, interviews et reportages sur le championnat italien."
+  breadcrumbs={[{ label: 'Actualités Serie A', href: '/serie-a' }]}
 >
   <!-- Hero Section -->
   <div class="mb-8">
     <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
-      Serie A
+      Actualités Serie A
     </h1>
-    <p class="text-lg text-text/70">
-      Toute l'actualité du championnat italien : analyses, interviews,
-      reportages et coulisses de la Serie A.
+    <p class="text-lg text-text/70 mb-6">
+      Toute l'actualité du championnat italien : analyses, interviews et
+      reportages.
     </p>
+
+    <!-- Quick Links -->
+    <div class="flex flex-wrap gap-3">
+      <a
+        href="/classement"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Classement
+      </a>
+      <a
+        href="/resultats-calendrier"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Résultats
+      </a>
+      <a
+        href="/formations-probables"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Formations probables
+      </a>
+      <a
+        href="/transferts"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Transferts
+      </a>
+      <a
+        href="/equipes"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Équipes
+      </a>
+      <a
+        href="/arbitres"
+        class="px-4 py-2 bg-card border border-separator rounded-sm hover:bg-accent-light hover:border-accent transition-all text-sm font-medium"
+      >
+        Statistiques
+      </a>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Articles -->
-    <div class="lg:col-span-2">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-condensed font-semibold">Derniers articles</h2>
-        {
-          total > posts.length && (
-            <span class="text-sm text-text/60">{total} articles</span>
-          )
-        }
-      </div>
-
-      <ArticleGrid articles={posts} columns={2} />
-    </div>
-
-    <!-- Sidebar -->
-    <aside class="space-y-6">
-      <!-- Classement Widget -->
-      <div class="card">
-        <div class="p-4 border-b border-separator flex items-center justify-between">
-          <h3 class="font-condensed font-semibold text-lg">Classement</h3>
-          <a href="/classement" class="text-xs text-accent hover:underline">
-            Complet →
-          </a>
-        </div>
-        <div class="p-4">
-          <StandingsTable standings={topStandings} compact={true} />
-        </div>
-      </div>
-
-      <!-- Quick Links -->
-      <div class="card p-6">
-        <h3 class="font-condensed font-semibold text-lg mb-4">
-          Accès rapide
-        </h3>
-        <ul class="space-y-3">
-          <li>
-            <a
-              href="/classement"
-              class="flex items-center justify-between hover:text-accent transition-colors"
-            >
-              <span>Classement</span>
-              <span class="text-accent">→</span>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/resultats-calendrier"
-              class="flex items-center justify-between hover:text-accent transition-colors"
-            >
-              <span>Résultats & Calendrier</span>
-              <span class="text-accent">→</span>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/formations-probables"
-              class="flex items-center justify-between hover:text-accent transition-colors"
-            >
-              <span>Formations probables</span>
-              <span class="text-accent">→</span>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/transferts"
-              class="flex items-center justify-between hover:text-accent transition-colors"
-            >
-              <span>Mercato & Transferts</span>
-              <span class="text-accent">→</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- About Serie A -->
-      <div class="card p-6 bg-accent-light">
-        <h3 class="font-condensed font-semibold text-lg mb-3">
-          À propos de la Serie A
-        </h3>
-        <p class="text-sm text-text/80 leading-relaxed">
-          Le championnat d'Italie de football, aussi appelé Serie A, est la
-          première division du football italien. Créé en 1898, c'est l'un des
-          championnats les plus prestigieux d'Europe.
+  <!-- Articles Count -->
+  {
+    total > 0 && (
+      <div class="mb-6">
+        <p class="text-sm text-text/60">
+          {total} {total > 1 ? 'articles' : 'article'}
         </p>
       </div>
-    </aside>
-  </div>
+    )
+  }
+
+  <!-- Articles Grid -->
+  <ArticleGrid articles={posts} columns={3} />
+
+  <!-- Load More (placeholder for future pagination) -->
+  {
+    total > posts.length && (
+      <div class="mt-12 text-center">
+        <button class="px-6 py-3 bg-accent text-white rounded-sm hover:bg-accent/90 transition-colors font-medium">
+          Charger plus d'articles
+        </button>
+      </div>
+    )
+  }
 </PageLayout>

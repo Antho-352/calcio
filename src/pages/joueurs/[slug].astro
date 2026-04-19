@@ -1,0 +1,219 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getPlayerStats } from '@/lib/football-api';
+
+export const prerender = true;
+
+const { slug } = Astro.params;
+
+// For now, use mock data with player ID 1
+// TODO: Map slug to player ID when API is configured
+const playerStats = await getPlayerStats(1);
+
+if (!playerStats) {
+  return Astro.redirect('/404');
+}
+
+const { player, team, league, season, games, goals, cards } = playerStats;
+---
+
+<PageLayout
+  title={`${player.name} - Vai Calcio`}
+  description={`Statistiques et actualités de ${player.name}, ${player.position} de ${team.name}.`}
+  breadcrumbs={[
+    { label: 'Joueurs', href: '/joueurs' },
+    { label: player.name, href: `/joueurs/${slug}` },
+  ]}
+>
+  <!-- Player Header -->
+  <div class="mb-8">
+    <div class="flex items-center gap-6 mb-6">
+      {
+        player.photo && (
+          <img
+            src={player.photo}
+            alt={player.name}
+            class="w-24 h-24 rounded-full object-cover"
+          />
+        )
+      }
+      <div>
+        <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-2">
+          {player.name}
+        </h1>
+        <div class="flex items-center gap-4 text-text/70">
+          <span>{player.position}</span>
+          <span>•</span>
+          <span>{player.age} ans</span>
+          <span>•</span>
+          <span>{player.nationality}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player Info Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Équipe actuelle</p>
+        <p class="font-semibold">{team.name}</p>
+      </div>
+      {
+        player.number && (
+          <div class="card p-4">
+            <p class="text-xs text-text/60 mb-1">Numéro</p>
+            <p class="font-semibold text-2xl">{player.number}</p>
+          </div>
+        )
+      }
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Poste</p>
+        <p class="font-semibold">{player.position}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Nationalité</p>
+        <p class="font-semibold">{player.nationality}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Stats -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Season Stats -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">
+            Statistiques {league} {season}/{season + 1}
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="text-center">
+              <p class="text-3xl font-bold text-accent">
+                {games.appearences}
+              </p>
+              <p class="text-sm text-text/60 mt-1">Matchs joués</p>
+            </div>
+            <div class="text-center">
+              <p class="text-3xl font-bold text-accent">{games.lineups}</p>
+              <p class="text-sm text-text/60 mt-1">Titularisations</p>
+            </div>
+            <div class="text-center">
+              <p class="text-3xl font-bold text-accent">{games.minutes}</p>
+              <p class="text-sm text-text/60 mt-1">Minutes jouées</p>
+            </div>
+            <div class="text-center">
+              <p class="text-3xl font-bold text-accent">
+                {Math.round(games.minutes / games.appearences)}
+              </p>
+              <p class="text-sm text-text/60 mt-1">Min. par match</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goals & Assists -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">
+            Buts et passes décisives
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-3 gap-6 text-center">
+            <div>
+              <p class="text-4xl font-bold text-green-600">{goals.total}</p>
+              <p class="text-sm text-text/60 mt-2">Buts marqués</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-blue-600">{goals.assists}</p>
+              <p class="text-sm text-text/60 mt-2">Passes décisives</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-accent">
+                {goals.total + goals.assists}
+              </p>
+              <p class="text-sm text-text/60 mt-2">Contributions</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Discipline -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">Discipline</h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-2 gap-6 text-center">
+            <div>
+              <p class="text-4xl font-bold text-yellow-500">{cards.yellow}</p>
+              <p class="text-sm text-text/60 mt-2">Cartons jaunes</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-red-600">{cards.red}</p>
+              <p class="text-sm text-text/60 mt-2">Cartons rouges</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="space-y-6">
+      <!-- Quick Info -->
+      <div class="card p-6">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Informations</h3>
+        <ul class="space-y-3 text-sm">
+          <li class="flex justify-between">
+            <span class="text-text/60">Prénom</span>
+            <span class="font-medium">{player.firstname}</span>
+          </li>
+          <li class="flex justify-between">
+            <span class="text-text/60">Nom</span>
+            <span class="font-medium">{player.lastname}</span>
+          </li>
+          <li class="flex justify-between">
+            <span class="text-text/60">Âge</span>
+            <span class="font-medium">{player.age} ans</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Team Link -->
+      <div class="card p-6">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Équipe</h3>
+        <a
+          href={`/equipes/${team.name.toLowerCase().replace(/\s+/g, '-')}`}
+          class="flex items-center gap-3 hover:text-accent transition-colors"
+        >
+          {
+            team.logo && (
+              <img
+                src={team.logo}
+                alt={team.name}
+                class="w-10 h-10 object-contain"
+              />
+            )
+          }
+          <div>
+            <p class="font-semibold">{team.name}</p>
+            <p class="text-xs text-text/60">Voir la fiche équipe →</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="card p-6 bg-accent-light">
+        <h3 class="font-condensed font-semibold text-lg mb-3">
+          Plus d'infos
+        </h3>
+        <p class="text-sm text-text/80 leading-relaxed">
+          Les statistiques détaillées et l'historique du joueur seront
+          disponibles prochainement.
+        </p>
+      </div>
+    </aside>
+  </div>
+</PageLayout>

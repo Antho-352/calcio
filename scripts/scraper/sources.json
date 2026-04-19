@@ -1,0 +1,70 @@
+{
+  "sources": [
+    {
+      "name": "Gazzetta dello Sport",
+      "url": "https://www.gazzetta.it/Calcio/Serie-A/",
+      "weight": 1.0,
+      "selectors": {
+        "formations_page": ".formazioni-probabili",
+        "match_container": ".match-item",
+        "team_name": ".team-name",
+        "formation": ".formation-schema",
+        "players": ".player-list .player-name"
+      }
+    },
+    {
+      "name": "Sky Sport Italia",
+      "url": "https://sport.sky.it/calcio/serie-a/",
+      "weight": 1.0,
+      "selectors": {
+        "formations_page": ".probabili-formazioni",
+        "match_container": ".match-card",
+        "team_name": ".team-title",
+        "formation": ".tactical-schema",
+        "players": ".lineup .player"
+      }
+    },
+    {
+      "name": "TuttoSport",
+      "url": "https://www.tuttosport.com/news/calcio/serie-a/",
+      "weight": 0.9,
+      "selectors": {
+        "formations_page": ".formazioni",
+        "match_container": ".partita",
+        "team_name": ".squadra",
+        "formation": ".modulo",
+        "players": ".giocatori .nome"
+      }
+    },
+    {
+      "name": "Corriere dello Sport",
+      "url": "https://www.corrieredellosport.it/calcio/serie-a/",
+      "weight": 0.9,
+      "selectors": {
+        "formations_page": ".probabili-formazioni",
+        "match_container": ".gara",
+        "team_name": ".team",
+        "formation": ".sistema-gioco",
+        "players": ".titolari .giocatore"
+      }
+    }
+  ],
+  "scraping_config": {
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "timeout": 30,
+    "retry_attempts": 3,
+    "retry_delay": 5,
+    "headless": true,
+    "wait_for_selector_timeout": 10000
+  },
+  "wordpress": {
+    "rest_api_url": "https://wp.vai-calcio.fr/wp-json/wp/v2/formation",
+    "auth_user": "",
+    "auth_password": ""
+  },
+  "schedule": {
+    "thursday_10am": "0 10 * * 4",
+    "saturday_8am": "0 8 * * 6",
+    "tuesday_10am": "0 10 * * 2"
+  }
+}

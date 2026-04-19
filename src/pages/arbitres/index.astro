@@ -1,0 +1,114 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getReferees } from '@/lib/football-api';
+
+// Fetch all Serie A referees
+const referees = await getReferees();
+
+// Sort by name
+referees.sort((a, b) => a.name.localeCompare(b.name));
+---
+
+<PageLayout
+  title="Arbitres Serie A - Vai Calcio"
+  description="Liste complète des arbitres de Serie A avec leurs statistiques détaillées de la saison en cours."
+  breadcrumbs={[{ label: 'Arbitres', href: '/arbitres' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Arbitres Serie A
+    </h1>
+    <p class="text-lg text-text/70">
+      Retrouvez tous les arbitres officiants en Serie A avec leurs statistiques
+      détaillées.
+    </p>
+  </div>
+
+  <!-- Referees Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {
+      referees.map((referee) => {
+        const slug = referee.name.toLowerCase().replace(/\s+/g, '-');
+
+        return (
+          <a
+            href={`/arbitres/${slug}`}
+            class="card p-6 hover:shadow-lg transition-shadow"
+          >
+            <div class="flex items-center gap-4 mb-4">
+              {referee.photo && (
+                <img
+                  src={referee.photo}
+                  alt={referee.name}
+                  class="w-16 h-16 rounded-full object-cover bg-gray-200"
+                  onerror="this.src='/referees/default.png'"
+                />
+              )}
+              <div>
+                <h2 class="font-condensed font-semibold text-xl mb-1 hover:text-accent transition-colors">
+                  {referee.name}
+                </h2>
+                <p class="text-sm text-text/60">{referee.nationality}</p>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-separator">
+              <p class="text-sm text-accent font-medium">
+                Voir les statistiques →
+              </p>
+            </div>
+          </a>
+        );
+      })
+    }
+  </div>
+
+  <!-- Info Section -->
+  <div class="mt-12 card p-6 bg-accent-light">
+    <h2 class="font-condensed font-semibold text-xl mb-4">
+      À propos des arbitres
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-text/80">
+      <div>
+        <h3 class="font-semibold mb-2">Statistiques disponibles</h3>
+        <ul class="space-y-1">
+          <li>• Nombre de matchs arbitrés</li>
+          <li>• Cartons jaunes et rouges distribués</li>
+          <li>• Penalties sifflés</li>
+          <li>• Fautes sifflées par match</li>
+          <li>• Buts moyens par match</li>
+          <li>• Matchs arbitrés par équipe</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Sources des données</h3>
+        <p class="leading-relaxed">
+          Les statistiques proviennent des matchs officiels de Serie A de la
+          saison en cours. Les données sont mises à jour après chaque journée de
+          championnat.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Links -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/classement" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Classement</h3>
+      <p class="text-sm text-text/70">Classement complet Serie A</p>
+    </a>
+
+    <a
+      href="/resultats-calendrier"
+      class="card p-6 hover:shadow-md transition-shadow"
+    >
+      <h3 class="font-semibold mb-2">Résultats</h3>
+      <p class="text-sm text-text/70">Tous les matchs de Serie A</p>
+    </a>
+
+    <a href="/equipes/juventus" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Équipes</h3>
+      <p class="text-sm text-text/70">Fiches des équipes</p>
+    </a>
+  </div>
+</PageLayout>

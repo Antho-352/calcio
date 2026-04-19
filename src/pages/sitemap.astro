@@ -1,191 +1,119 @@
 ---
 import PageLayout from '@/layouts/PageLayout.astro';
-import { getPosts, getCategories, getTags } from '@/lib/wordpress';
 
-// Fetch all content for sitemap
-let posts: any[] = [];
-let categories: any[] = [];
-let tags: any[] = [];
-
-try {
-  const postsResult = await getPosts(100);
-  posts = postsResult.posts;
-  categories = await getCategories();
-  tags = await getTags();
-} catch (error) {
-  console.warn('Failed to fetch sitemap data');
-}
-
-const mainPages = [
-  { title: 'Accueil', href: '/', description: 'Page d\'accueil' },
-  { title: 'Serie A', href: '/serie-a', description: 'Hub éditorial Serie A' },
-  { title: 'Classement', href: '/classement', description: 'Classement de la Serie A' },
-  { title: 'Résultats & Calendrier', href: '/resultats-calendrier', description: 'Tous les matchs' },
-  { title: 'Formations Probables', href: '/formations-probables', description: 'Compositions d\'équipes' },
-  { title: 'Transferts', href: '/transferts', description: 'Mercato et transferts' },
-  { title: 'Coppa Italia', href: '/coppa-italia', description: 'Coupe d\'Italie' },
-  { title: 'Squadra Azzurra', href: '/equipe-nationale', description: 'Équipe nationale italienne' },
-  { title: 'Blog', href: '/blog', description: 'Tous les articles' },
-  { title: 'Recherche', href: '/recherche', description: 'Rechercher sur le site' },
-];
-
-const legalPages = [
-  { title: 'À propos', href: '/a-propos' },
-  { title: 'Contact', href: '/contact' },
-  { title: 'Mentions légales', href: '/mentions-legales' },
-];
+// Organize all site pages by category
+const siteStructure = {
+  'Pages principales': [
+    { title: 'Accueil', href: '/', description: 'Page d\'accueil du site' },
+    { title: 'Classement Serie A', href: '/classement', description: 'Classement complet de la Serie A' },
+    { title: 'Résultats & Calendrier', href: '/resultats-calendrier', description: 'Tous les matchs de Serie A' },
+    { title: 'Formations Probables', href: '/formations-probables', description: 'Compositions d\'équipes probables' },
+  ],
+  'Actualités': [
+    { title: 'Serie A', href: '/serie-a', description: 'Hub actualités Serie A' },
+    { title: 'Blog', href: '/blog', description: 'Tous les articles' },
+    { title: 'Transferts', href: '/transferts', description: 'Mercato et transferts' },
+    { title: 'Coppa Italia', href: '/coppa-italia', description: 'Coupe d\'Italie' },
+    { title: 'Squadra Azzurra', href: '/equipe-nationale', description: 'Équipe nationale italienne' },
+  ],
+  'Équipes': [
+    { title: 'AC Milan', href: '/equipes/milan', description: 'Fiche équipe' },
+    { title: 'Inter Milan', href: '/equipes/inter', description: 'Fiche équipe' },
+    { title: 'Juventus', href: '/equipes/juventus', description: 'Fiche équipe' },
+    { title: 'AS Roma', href: '/equipes/roma', description: 'Fiche équipe' },
+    { title: 'Napoli', href: '/equipes/napoli', description: 'Fiche équipe' },
+    { title: 'Lazio', href: '/equipes/lazio', description: 'Fiche équipe' },
+    { title: 'Atalanta', href: '/equipes/atalanta', description: 'Fiche équipe' },
+    { title: 'Fiorentina', href: '/equipes/fiorentina', description: 'Fiche équipe' },
+  ],
+  'Joueurs': [
+    { title: 'Dusan Vlahovic', href: '/joueurs/dusan-vlahovic', description: 'Statistiques joueur' },
+    { title: 'Lautaro Martinez', href: '/joueurs/lautaro-martinez', description: 'Statistiques joueur' },
+  ],
+  'Arbitres': [
+    { title: 'Daniele Orsato', href: '/arbitres/daniele-orsato', description: 'Statistiques arbitre' },
+  ],
+  'Informations': [
+    { title: 'À propos', href: '/a-propos', description: 'À propos de Vai Calcio' },
+    { title: 'Contact', href: '/contact', description: 'Nous contacter' },
+    { title: 'Mentions légales', href: '/mentions-legales', description: 'Informations légales' },
+  ],
+};
 ---
 
 <PageLayout
   title="Plan du site - Vai Calcio"
-  description="Plan complet du site Vai Calcio"
+  description="Plan complet du site vai-calcio.fr avec toutes les pages organisées par catégorie."
   breadcrumbs={[{ label: 'Plan du site', href: '/sitemap' }]}
 >
-  <h1 class="text-4xl font-condensed font-bold mb-8">Plan du site</h1>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Plan du site
+    </h1>
+    <p class="text-lg text-text/70">
+      Retrouvez toutes les pages du site organisées par catégorie.
+    </p>
+  </div>
 
-  <!-- Main Pages -->
-  <section class="mb-12">
-    <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
-      Pages principales
-    </h2>
-    <ul class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {
-        mainPages.map((page) => (
-          <li class="card p-4 hover:shadow-md transition-shadow">
-            <a href={page.href} class="block">
-              <h3 class="font-semibold text-accent hover:underline mb-1">
-                {page.title}
-              </h3>
-              {page.description && (
-                <p class="text-sm text-text/70">{page.description}</p>
-              )}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
-  <!-- Recent Articles -->
-  {
-    posts.length > 0 && (
-      <section class="mb-12">
-        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
-          Articles récents
-        </h2>
-        <ul class="space-y-2">
-          {posts.slice(0, 20).map((post: any) => (
-            <li>
-              <a
-                href={`/blog/${post.slug}`}
-                class="text-accent hover:underline"
-              >
-                {post.title}
-              </a>
-              <span class="text-sm text-text/60 ml-2">
-                ({new Date(post.date).toLocaleDateString('fr-FR')})
-              </span>
-            </li>
-          ))}
-        </ul>
-        {posts.length > 20 && (
-          <a
-            href="/blog"
-            class="inline-block mt-4 text-accent font-medium hover:underline"
-          >
-            Voir tous les articles →
-          </a>
-        )}
-      </section>
-    )
-  }
-
-  <!-- Categories -->
-  {
-    categories.length > 0 && (
-      <section class="mb-12">
-        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
-          Catégories
-        </h2>
-        <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {categories
-            .filter((cat: any) => cat.count > 0)
-            .map((category: any) => (
+  <!-- Site structure -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    {
+      Object.entries(siteStructure).map(([category, pages]) => (
+        <div class="card p-6">
+          <h2 class="font-condensed font-semibold text-xl mb-4 pb-2 border-b border-separator">
+            {category}
+          </h2>
+          <ul class="space-y-3">
+            {pages.map((page) => (
               <li>
                 <a
-                  href={`/categorie/${category.slug}`}
-                  class="block card p-3 hover:shadow-md transition-shadow"
+                  href={page.href}
+                  class="block group hover:bg-accent-light p-2 -mx-2 rounded transition-colors"
                 >
-                  <span class="font-medium text-accent hover:underline">
-                    {category.name}
-                  </span>
-                  <span class="text-sm text-text/60 ml-2">
-                    ({category.count})
-                  </span>
+                  <div class="font-medium text-accent group-hover:underline">
+                    {page.title}
+                  </div>
+                  <div class="text-sm text-text/60 mt-0.5">
+                    {page.description}
+                  </div>
                 </a>
               </li>
             ))}
-        </ul>
-      </section>
-    )
-  }
-
-  <!-- Tags -->
-  {
-    tags.length > 0 && (
-      <section class="mb-12">
-        <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
-          Tags
-        </h2>
-        <div class="flex flex-wrap gap-2">
-          {tags
-            .filter((tag: any) => tag.count > 0)
-            .slice(0, 50)
-            .map((tag: any) => (
-              <a
-                href={`/tag/${tag.slug}`}
-                class="px-3 py-1 bg-accent-light text-accent text-sm rounded-sm hover:bg-accent hover:text-white transition-colors"
-              >
-                {tag.name} ({tag.count})
-              </a>
-            ))}
+          </ul>
         </div>
-      </section>
-    )
-  }
+      ))
+    }
+  </div>
 
-  <!-- Legal Pages -->
-  <section class="mb-12">
-    <h2 class="text-2xl font-condensed font-semibold mb-4 pb-2 border-b border-separator">
-      Informations
-    </h2>
-    <ul class="space-y-2">
-      {
-        legalPages.map((page) => (
-          <li>
-            <a href={page.href} class="text-accent hover:underline">
-              {page.title}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
-  <!-- XML Sitemap Link -->
-  <section class="card p-6 bg-accent-light">
-    <h2 class="text-xl font-condensed font-semibold mb-2">
-      Sitemap XML pour les moteurs de recherche
-    </h2>
+  <!-- SEO notice -->
+  <div class="mt-8 card p-6 bg-accent-light">
+    <h3 class="font-semibold mb-2">Plan du site XML</h3>
     <p class="text-sm text-text/70 mb-3">
-      Le sitemap XML est utilisé par Google et les autres moteurs de recherche
-      pour indexer le site.
+      Pour les moteurs de recherche, consultez le
+      <a href="/sitemap-index.xml" class="text-accent hover:underline"
+        >sitemap XML</a
+      >.
     </p>
-    <a
-      href="/sitemap-index.xml"
-      class="text-accent font-medium hover:underline"
-    >
-      Voir le sitemap XML →
+  </div>
+
+  <!-- Quick links -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="/classement" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Classement</h3>
+      <p class="text-sm text-text/70">Classement complet Serie A</p>
     </a>
-  </section>
+
+    <a
+      href="/resultats-calendrier"
+      class="card p-6 hover:shadow-md transition-shadow"
+    >
+      <h3 class="font-semibold mb-2">Résultats</h3>
+      <p class="text-sm text-text/70">Tous les matchs de Serie A</p>
+    </a>
+
+    <a href="/blog" class="card p-6 hover:shadow-md transition-shadow">
+      <h3 class="font-semibold mb-2">Articles</h3>
+      <p class="text-sm text-text/70">Toutes les actualités</p>
+    </a>
+  </div>
 </PageLayout>

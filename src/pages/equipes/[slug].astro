@@ -1,0 +1,347 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getTeams, getTeam, getMatches, getTeamTopScorers } from '@/lib/football-api';
+import { getPostsByCategory } from '@/lib/wordpress';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const teams = await getTeams();
+  return teams.map((team) => ({
+    params: { slug: team.name.toLowerCase().replace(/\s+/g, '-') },
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Fetch team data
+const team = await getTeam(slug!);
+
+if (!team) {
+  return Astro.redirect('/404');
+}
+
+// Fetch team matches
+const allMatches = await getMatches();
+const teamMatches = allMatches.filter(
+  (match) =>
+    match.homeTeam.id === team.id || match.awayTeam.id === team.id
+);
+
+const recentMatches = teamMatches
+  .filter((m) => m.status === 'finished')
+  .slice(0, 5);
+const upcomingMatches = teamMatches
+  .filter((m) => m.status === 'scheduled')
+  .slice(0, 5);
+
+// Fetch top scorers
+const topScorers = await getTeamTopScorers(team.id);
+
+// Fetch related articles
+let articles: any[] = [];
+try {
+  const result = await getPostsByCategory(slug!, 6, 0);
+  articles = result.posts.map((post) => ({
+    title: post.title,
+    slug: post.slug,
+    date: new Date(post.date).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    }),
+  }));
+} catch (error) {
+  articles = [];
+}
+---
+
+<PageLayout
+  title={`${team.name} - Vai Calcio`}
+  description={`Toute l'actualité de ${team.name} : résultats, calendrier, effectif et analyses.`}
+  breadcrumbs={[
+    { label: 'Équipes', href: '/equipes' },
+    { label: team.name, href: `/equipes/${slug}` },
+  ]}
+>
+  <!-- Team Header -->
+  <div class="mb-8">
+    <div class="flex items-center gap-6 mb-4">
+      {
+        team.logo && (
+          <img
+            src={team.logo}
+            alt={team.name}
+            class="w-20 h-20 object-contain"
+          />
+        )
+      }
+      <div>
+        <h1 class="text-4xl md:text-5xl font-condensed font-bold">
+          {team.name}
+        </h1>
+        {team.city && (
+          <p class="text-lg text-text/70 mt-2">{team.city}, Italie</p>
+        )}
+      </div>
+    </div>
+
+    {/* Team Info */}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {team.stadium && (
+        <div class="card p-4">
+          <p class="text-xs text-text/60 mb-1">Stade</p>
+          <p class="font-semibold">{team.stadium}</p>
+        </div>
+      )}
+      {team.founded && (
+        <div class="card p-4">
+          <p class="text-xs text-text/60 mb-1">Fondation</p>
+          <p class="font-semibold">{team.founded}</p>
+        </div>
+      )}
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Code</p>
+        <p class="font-semibold">{team.code}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Compétition</p>
+        <p class="font-semibold">Serie A</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-8">
+      <!-- Recent Matches -->
+      {
+        recentMatches.length > 0 && (
+          <div class="card">
+            <div class="p-6 border-b border-separator">
+              <h2 class="font-condensed font-semibold text-xl">
+                Derniers résultats
+              </h2>
+            </div>
+            <div class="divide-y divide-separator">
+              {recentMatches.map((match) => {
+                const isHome = match.homeTeam.id === team.id;
+                const opponent = isHome ? match.awayTeam : match.homeTeam;
+                const teamScore = isHome
+                  ? match.score?.home
+                  : match.score?.away;
+                const opponentScore = isHome
+                  ? match.score?.away
+                  : match.score?.home;
+                const won =
+                  teamScore !== undefined &&
+                  opponentScore !== undefined &&
+                  teamScore > opponentScore;
+                const lost =
+                  teamScore !== undefined &&
+                  opponentScore !== undefined &&
+                  teamScore < opponentScore;
+
+                return (
+                  <div class="p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class={`w-2 h-2 rounded-full ${
+                          won
+                            ? 'bg-green-500'
+                            : lost
+                              ? 'bg-red-500'
+                              : 'bg-gray-400'
+                        }`}
+                      />
+                      <span class="text-xs text-text/60">
+                        {isHome ? 'DOM' : 'EXT'}
+                      </span>
+                      <span class="font-medium">{opponent.name}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span
+                        class={`font-bold ${
+                          won
+                            ? 'text-green-600'
+                            : lost
+                              ? 'text-red-600'
+                              : ''
+                        }`}
+                      >
+                        {teamScore} - {opponentScore}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Upcoming Matches */}
+      {
+        upcomingMatches.length > 0 && (
+          <div class="card">
+            <div class="p-6 border-b border-separator">
+              <h2 class="font-condensed font-semibold text-xl">
+                Prochains matchs
+              </h2>
+            </div>
+            <div class="divide-y divide-separator">
+              {upcomingMatches.map((match) => {
+                const isHome = match.homeTeam.id === team.id;
+                const opponent = isHome ? match.awayTeam : match.homeTeam;
+                const matchDate = new Date(match.date);
+
+                return (
+                  <div class="p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs text-text/60">
+                        {isHome ? 'DOM' : 'EXT'}
+                      </span>
+                      <span class="font-medium">{opponent.name}</span>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm font-medium">
+                        {matchDate.toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </p>
+                      <p class="text-xs text-text/60">
+                        {matchDate.toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Top Scorers -->
+      {
+        topScorers.length > 0 && (
+          <div class="card">
+            <div class="p-6 border-b border-separator">
+              <h2 class="font-condensed font-semibold text-xl">
+                Meilleurs buteurs
+              </h2>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                {topScorers.map((scorer, index) => (
+                  <div class="flex items-center gap-4">
+                    <div class="w-8 text-center font-bold text-text/40">
+                      {index + 1}
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3">
+                        <img
+                          src={scorer.player.photo}
+                          alt={scorer.player.name}
+                          class="w-10 h-10 rounded-full object-cover bg-gray-200"
+                          onerror="this.src='/players/default.png'"
+                        />
+                        <div class="flex-1">
+                          <p class="font-semibold">{scorer.player.name}</p>
+                          <p class="text-xs text-text/60">
+                            {scorer.player.position} • N°{scorer.player.number}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="flex items-center gap-4">
+                        <div>
+                          <p class="text-2xl font-bold text-accent">
+                            {scorer.goals}
+                          </p>
+                          <p class="text-xs text-text/60">buts</p>
+                        </div>
+                        <div>
+                          <p class="text-lg font-semibold text-blue-600">
+                            {scorer.assists}
+                          </p>
+                          <p class="text-xs text-text/60">passes</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="space-y-6">
+      <!-- Articles -->
+      {
+        articles.length > 0 && (
+          <div class="card">
+            <div class="p-4 border-b border-separator">
+              <h3 class="font-condensed font-semibold text-lg">
+                Articles liés
+              </h3>
+            </div>
+            <div class="divide-y divide-separator">
+              {articles.map((article) => (
+                <a
+                  href={`/blog/${article.slug}`}
+                  class="block p-4 hover:bg-accent-light transition-colors"
+                >
+                  <h4 class="text-sm font-medium mb-1 line-clamp-2">
+                    {article.title}
+                  </h4>
+                  <p class="text-xs text-text/60">{article.date}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Quick Links -->
+      <div class="card p-6">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Liens utiles</h3>
+        <ul class="space-y-3 text-sm">
+          <li>
+            <a
+              href="/classement"
+              class="flex items-center justify-between hover:text-accent transition-colors"
+            >
+              <span>Classement</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/resultats-calendrier"
+              class="flex items-center justify-between hover:text-accent transition-colors"
+            >
+              <span>Tous les résultats</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/serie-a"
+              class="flex items-center justify-between hover:text-accent transition-colors"
+            >
+              <span>Actualités Serie A</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</PageLayout>

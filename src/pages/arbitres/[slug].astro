@@ -1,0 +1,324 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getReferees, getReferee, getRefereeStats } from '@/lib/football-api';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const referees = await getReferees();
+  return referees.map((referee) => ({
+    params: { slug: referee.name.toLowerCase().replace(/\s+/g, '-') },
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Get referee by slug
+const referee = await getReferee(slug!);
+
+if (!referee) {
+  return Astro.redirect('/404');
+}
+
+// Get referee stats
+const refereeStats = await getRefereeStats(referee.id);
+
+if (!refereeStats) {
+  return Astro.redirect('/404');
+}
+
+const { season, matches, yellowCards, redCards, penalties, fouls, goals, matchesByTeam } =
+  refereeStats;
+
+// Calculate averages
+const yellowPerMatch = (yellowCards / matches).toFixed(2);
+const redPerMatch = (redCards / matches).toFixed(2);
+const penaltiesPerMatch = (penalties / matches).toFixed(2);
+const foulsPerMatch = (fouls / matches).toFixed(1);
+const goalsPerMatch = (goals / matches).toFixed(2);
+---
+
+<PageLayout
+  title={`${referee.name} - Arbitre Serie A - Vai Calcio`}
+  description={`Statistiques et historique de l'arbitre ${referee.name} en Serie A.`}
+  breadcrumbs={[
+    { label: 'Arbitres', href: '/arbitres' },
+    { label: referee.name, href: `/arbitres/${slug}` },
+  ]}
+>
+  <!-- Referee Header -->
+  <div class="mb-8">
+    <div class="flex items-center gap-6 mb-6">
+      {
+        referee.photo && (
+          <img
+            src={referee.photo}
+            alt={referee.name}
+            class="w-24 h-24 rounded-full object-cover"
+          />
+        )
+      }
+      <div>
+        <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-2">
+          {referee.name}
+        </h1>
+        <div class="flex items-center gap-4 text-text/70">
+          <span>Arbitre international</span>
+          <span>•</span>
+          <span>{referee.nationality}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Nationalité</p>
+        <p class="font-semibold">{referee.nationality}</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Compétition</p>
+        <p class="font-semibold">Serie A</p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Saison</p>
+        <p class="font-semibold">
+          {season}/{season + 1}
+        </p>
+      </div>
+      <div class="card p-4">
+        <p class="text-xs text-text/60 mb-1">Matchs dirigés</p>
+        <p class="font-semibold text-2xl">{matches}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Stats -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Season Stats -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">
+            Statistiques saison {season}/{season + 1}
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div>
+              <p class="text-4xl font-bold text-accent">{matches}</p>
+              <p class="text-sm text-text/60 mt-2">Matchs arbitrés</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-yellow-500">{yellowCards}</p>
+              <p class="text-sm text-text/60 mt-2">Cartons jaunes</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-red-600">{redCards}</p>
+              <p class="text-sm text-text/60 mt-2">Cartons rouges</p>
+            </div>
+            <div>
+              <p class="text-4xl font-bold text-blue-600">{penalties}</p>
+              <p class="text-sm text-text/60 mt-2">Penalties sifflés</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Averages -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">
+            Moyennes par match
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-text/70">Cartons jaunes</span>
+              <div class="flex items-center gap-3">
+                <div class="w-48 bg-separator rounded-full h-2">
+                  <div
+                    class="bg-yellow-500 h-2 rounded-full"
+                    style={`width: ${Math.min((parseFloat(yellowPerMatch) / 6) * 100, 100)}%`}
+                  >
+                  </div>
+                </div>
+                <span class="font-bold w-12 text-right">{yellowPerMatch}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-text/70">Cartons rouges</span>
+              <div class="flex items-center gap-3">
+                <div class="w-48 bg-separator rounded-full h-2">
+                  <div
+                    class="bg-red-600 h-2 rounded-full"
+                    style={`width: ${Math.min((parseFloat(redPerMatch) / 0.5) * 100, 100)}%`}
+                  >
+                  </div>
+                </div>
+                <span class="font-bold w-12 text-right">{redPerMatch}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-text/70">Penalties</span>
+              <div class="flex items-center gap-3">
+                <div class="w-48 bg-separator rounded-full h-2">
+                  <div
+                    class="bg-blue-600 h-2 rounded-full"
+                    style={`width: ${Math.min((parseFloat(penaltiesPerMatch) / 0.5) * 100, 100)}%`}
+                  >
+                  </div>
+                </div>
+                <span class="font-bold w-12 text-right">
+                  {penaltiesPerMatch}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-text/70">Fautes sifflées</span>
+              <div class="flex items-center gap-3">
+                <div class="w-48 bg-separator rounded-full h-2">
+                  <div
+                    class="bg-gray-500 h-2 rounded-full"
+                    style={`width: ${Math.min((parseFloat(foulsPerMatch) / 30) * 100, 100)}%`}
+                  >
+                  </div>
+                </div>
+                <span class="font-bold w-12 text-right">{foulsPerMatch}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-text/70">Buts par match</span>
+              <div class="flex items-center gap-3">
+                <div class="w-48 bg-separator rounded-full h-2">
+                  <div
+                    class="bg-green-600 h-2 rounded-full"
+                    style={`width: ${Math.min((parseFloat(goalsPerMatch) / 4) * 100, 100)}%`}
+                  >
+                  </div>
+                </div>
+                <span class="font-bold w-12 text-right">{goalsPerMatch}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matches by Team -->
+      <div class="card">
+        <div class="p-6 border-b border-separator">
+          <h2 class="font-condensed font-semibold text-xl">
+            Matchs arbitrés par équipe
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-2">
+            {
+              matchesByTeam
+                .sort((a, b) => b.count - a.count)
+                .map((item) => (
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-text/70">{item.teamName}</span>
+                    <div class="flex items-center gap-3">
+                      <div class="w-32 bg-separator rounded-full h-1.5">
+                        <div
+                          class="bg-accent h-1.5 rounded-full"
+                          style={`width: ${(item.count / Math.max(...matchesByTeam.map((m) => m.count))) * 100}%`}
+                        />
+                      </div>
+                      <span class="font-bold w-8 text-right">{item.count}</span>
+                    </div>
+                  </div>
+                ))
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Discipline Profile -->
+      <div class="card p-6">
+        <h2 class="font-condensed font-semibold text-xl mb-4">
+          Profil disciplinaire
+        </h2>
+        <p class="text-sm text-text/70 leading-relaxed">
+          {
+            parseFloat(yellowPerMatch) > 4
+              ? "Arbitre sévère avec une moyenne élevée de cartons jaunes par match."
+              : parseFloat(yellowPerMatch) > 3
+                ? "Arbitre avec une discipline modérée, distribuant les cartons quand nécessaire."
+                : "Arbitre plutôt tolérant, privilégiant le jeu fluide."
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="space-y-6">
+      <!-- Quick Stats -->
+      <div class="card p-6">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Statistiques</h3>
+        <ul class="space-y-3 text-sm">
+          <li class="flex justify-between">
+            <span class="text-text/60">Matchs arbitrés</span>
+            <span class="font-bold">{matches}</span>
+          </li>
+          <li class="flex justify-between">
+            <span class="text-text/60">Total cartons</span>
+            <span class="font-bold">{yellowCards + redCards}</span>
+          </li>
+          <li class="flex justify-between">
+            <span class="text-text/60">Ratio jaune/rouge</span>
+            <span class="font-bold">
+              {redCards > 0 ? (yellowCards / redCards).toFixed(1) : 'N/A'}
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Info -->
+      <div class="card p-6 bg-accent-light">
+        <h3 class="font-condensed font-semibold text-lg mb-3">
+          À propos des statistiques
+        </h3>
+        <p class="text-sm text-text/80 leading-relaxed mb-3">
+          Les données sont basées sur les matchs de Serie A arbitrés durant la
+          saison en cours.
+        </p>
+        <p class="text-xs text-text/70">
+          Source : API-Football (données à venir)
+        </p>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="card p-6">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Liens utiles</h3>
+        <ul class="space-y-3 text-sm">
+          <li>
+            <a
+              href="/resultats-calendrier"
+              class="flex items-center justify-between hover:text-accent transition-colors"
+            >
+              <span>Calendrier Serie A</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href="/serie-a"
+              class="flex items-center justify-between hover:text-accent transition-colors"
+            >
+              <span>Actualités</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</PageLayout>

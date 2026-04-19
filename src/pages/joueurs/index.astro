@@ -1,0 +1,313 @@
+---
+import PageLayout from '@/layouts/PageLayout.astro';
+import { getTeams, getTeamTopScorers } from '@/lib/football-api';
+
+// Fetch all teams
+const teams = await getTeams();
+
+// Aggregate all players from all teams
+const allPlayers: any[] = [];
+for (const team of teams) {
+  const scorers = await getTeamTopScorers(team.id);
+  scorers.forEach((scorer) => {
+    allPlayers.push({
+      ...scorer.player,
+      goals: scorer.goals,
+      assists: scorer.assists,
+      teamName: team.name,
+      teamLogo: team.logo,
+      teamId: team.id,
+    });
+  });
+}
+
+// Sort by different criteria
+const topScorers = [...allPlayers].sort((a, b) => b.goals - a.goals).slice(0, 20);
+const topAssisters = [...allPlayers].sort((a, b) => b.assists - a.assists).slice(0, 20);
+const topContributors = [...allPlayers]
+  .sort((a, b) => b.goals + b.assists - (a.goals + a.assists))
+  .slice(0, 20);
+
+// Active tab (could be made interactive with client-side JS)
+const activeTab = 'scorers'; // scorers, assisters, contributors
+---
+
+<PageLayout
+  title="Joueurs Serie A - Vai Calcio"
+  description="Classement des meilleurs joueurs de Serie A : buteurs, passeurs et contributeurs de la saison en cours."
+  breadcrumbs={[{ label: 'Joueurs', href: '/joueurs' }]}
+>
+  <div class="mb-8">
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
+      Joueurs Serie A
+    </h1>
+    <p class="text-lg text-text/70">
+      Classement des meilleurs joueurs de la saison en cours.
+    </p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-6 border-b border-separator">
+    <div class="flex gap-6">
+      <button
+        class="pb-3 px-2 font-semibold text-accent border-b-2 border-accent"
+        id="tab-scorers"
+      >
+        Meilleurs buteurs
+      </button>
+      <button
+        class="pb-3 px-2 font-semibold text-text/60 hover:text-accent transition-colors"
+        id="tab-assisters"
+      >
+        Meilleurs passeurs
+      </button>
+      <button
+        class="pb-3 px-2 font-semibold text-text/60 hover:text-accent transition-colors"
+        id="tab-contributors"
+      >
+        Meilleurs contributeurs
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Scorers -->
+  <div class="card" id="content-scorers">
+    <div class="p-6 border-b border-separator">
+      <h2 class="font-condensed font-semibold text-xl">
+        Top 20 buteurs Serie A
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-separator">
+          <tr>
+            <th class="text-left px-6 py-3 w-12">#</th>
+            <th class="text-left px-4 py-3">Joueur</th>
+            <th class="text-left px-4 py-3">Équipe</th>
+            <th class="text-center px-4 py-3 w-20">Buts</th>
+            <th class="text-center px-4 py-3 w-20">Passes</th>
+            <th class="text-center px-4 py-3 w-20">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-separator">
+          {
+            topScorers.map((player, index) => (
+              <tr class="hover:bg-accent-light transition-colors">
+                <td class="px-6 py-4 font-bold text-text/40">{index + 1}</td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <img
+                      src={player.photo}
+                      alt={player.name}
+                      class="w-10 h-10 rounded-full object-cover bg-gray-200"
+                      onerror="this.src='/players/default.png'"
+                    />
+                    <div>
+                      <p class="font-semibold">{player.name}</p>
+                      <p class="text-xs text-text/60">{player.position}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-2">
+                    {player.teamLogo && (
+                      <img
+                        src={player.teamLogo}
+                        alt={player.teamName}
+                        class="w-5 h-5 object-contain"
+                      />
+                    )}
+                    <span class="text-sm">{player.teamName}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-xl font-bold text-accent">
+                    {player.goals}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-sm text-text/60">{player.assists}</span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="font-semibold">
+                    {player.goals + player.assists}
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Assisters (hidden by default) -->
+  <div class="card hidden" id="content-assisters">
+    <div class="p-6 border-b border-separator">
+      <h2 class="font-condensed font-semibold text-xl">
+        Top 20 passeurs Serie A
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-separator">
+          <tr>
+            <th class="text-left px-6 py-3 w-12">#</th>
+            <th class="text-left px-4 py-3">Joueur</th>
+            <th class="text-left px-4 py-3">Équipe</th>
+            <th class="text-center px-4 py-3 w-20">Passes</th>
+            <th class="text-center px-4 py-3 w-20">Buts</th>
+            <th class="text-center px-4 py-3 w-20">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-separator">
+          {
+            topAssisters.map((player, index) => (
+              <tr class="hover:bg-accent-light transition-colors">
+                <td class="px-6 py-4 font-bold text-text/40">{index + 1}</td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <img
+                      src={player.photo}
+                      alt={player.name}
+                      class="w-10 h-10 rounded-full object-cover bg-gray-200"
+                      onerror="this.src='/players/default.png'"
+                    />
+                    <div>
+                      <p class="font-semibold">{player.name}</p>
+                      <p class="text-xs text-text/60">{player.position}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-2">
+                    {player.teamLogo && (
+                      <img
+                        src={player.teamLogo}
+                        alt={player.teamName}
+                        class="w-5 h-5 object-contain"
+                      />
+                    )}
+                    <span class="text-sm">{player.teamName}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-xl font-bold text-blue-600">
+                    {player.assists}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-sm text-text/60">{player.goals}</span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="font-semibold">
+                    {player.goals + player.assists}
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Contributors (hidden by default) -->
+  <div class="card hidden" id="content-contributors">
+    <div class="p-6 border-b border-separator">
+      <h2 class="font-condensed font-semibold text-xl">
+        Top 20 contributeurs Serie A
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-separator">
+          <tr>
+            <th class="text-left px-6 py-3 w-12">#</th>
+            <th class="text-left px-4 py-3">Joueur</th>
+            <th class="text-left px-4 py-3">Équipe</th>
+            <th class="text-center px-4 py-3 w-20">Buts</th>
+            <th class="text-center px-4 py-3 w-20">Passes</th>
+            <th class="text-center px-4 py-3 w-20">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-separator">
+          {
+            topContributors.map((player, index) => (
+              <tr class="hover:bg-accent-light transition-colors">
+                <td class="px-6 py-4 font-bold text-text/40">{index + 1}</td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <img
+                      src={player.photo}
+                      alt={player.name}
+                      class="w-10 h-10 rounded-full object-cover bg-gray-200"
+                      onerror="this.src='/players/default.png'"
+                    />
+                    <div>
+                      <p class="font-semibold">{player.name}</p>
+                      <p class="text-xs text-text/60">{player.position}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-2">
+                    {player.teamLogo && (
+                      <img
+                        src={player.teamLogo}
+                        alt={player.teamName}
+                        class="w-5 h-5 object-contain"
+                      />
+                    )}
+                    <span class="text-sm">{player.teamName}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-lg font-bold text-accent">
+                    {player.goals}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-lg font-bold text-blue-600">
+                    {player.assists}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-2xl font-bold text-green-600">
+                    {player.goals + player.assists}
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = ['scorers', 'assisters', 'contributors'];
+
+    tabs.forEach((tab) => {
+      const button = document.getElementById(`tab-${tab}`);
+      button?.addEventListener('click', () => {
+        // Update button styles
+        tabs.forEach((t) => {
+          const btn = document.getElementById(`tab-${t}`);
+          const content = document.getElementById(`content-${t}`);
+
+          if (t === tab) {
+            btn?.classList.add('text-accent', 'border-b-2', 'border-accent');
+            btn?.classList.remove('text-text/60');
+            content?.classList.remove('hidden');
+          } else {
+            btn?.classList.remove('text-accent', 'border-b-2', 'border-accent');
+            btn?.classList.add('text-text/60');
+            content?.classList.add('hidden');
+          }
+        });
+      });
+    });
+  </script>
+</PageLayout>

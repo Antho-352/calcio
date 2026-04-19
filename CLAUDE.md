@@ -1,535 +1,261 @@
-# vai-calcio.fr — Project Documentation
+# CLAUDE.md
 
-Site de news et infos sur le football italien (Serie A principalement).
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Architecture
+## Project Overview
 
-### Stack
+vai-calcio.fr — Site de news et informations sur le football italien (Serie A).
 
-| Composant | Technologie | Version |
-|-----------|-------------|---------|
-| Framework | Astro | 5.18.1 |
-| Adapter | @astrojs/node | 9.x |
-| CMS | WordPress headless | Latest |
-| UI Framework | Tailwind CSS | 3.x |
-| Islands | Preact | Latest |
-| Recherche | Pagefind (astro-pagefind) | Latest |
-| Newsletter | Brevo API | v3 |
-| GraphQL Client | graphql-request | Latest |
-| Serveur | Node.js + PM2 + Nginx | - |
-| Hosting | KimSufi OVH | - |
+**Stack**: Astro 5 (SSG/SSR hybrid) + WordPress headless + Tailwind CSS + Node.js
 
-### Rendering Strategy
+## Essential Commands
 
-Astro 5 utilise `output: 'static'` par défaut avec adapter Node.
+```bash
+# Development
+npm run dev              # Start dev server on port 5432
+npm run build            # Build for production
+npm run preview          # Preview production build
 
-**Pages statiques** (prerender par défaut) :
-- Pages de contenu : équipes, joueurs, arbitres, classement, résultats
-- Pages légales, à propos, contact
-- Sitemap HTML
-- Taxonomie (tags, catégories)
-
-**Routes SSR** (`export const prerender = false`) :
-- `/api/revalidate` — webhook WordPress
-- `/api/newsletter` — inscription newsletter
-- `/api/scores` — proxy API football (cache serveur)
-- `/api/standings` — proxy classement
-- `/blog/[slug]` — articles individuels (SSR + cache experimental)
-
-### WordPress Headless
-
-**URL** : wp.vai-calcio.fr
-
-**Plugins requis** :
-- WPGraphQL
-- ACF (Advanced Custom Fields)
-- RankMath SEO
-- WP Webhooks (ou custom functions.php)
-
-**Custom Post Types** :
-- `article` — posts WordPress natifs (titre, contenu, excerpt, image, catégorie, tags, équipe(s) liée(s))
-- `formation` — CPT custom (journée, match, équipe, joueurs[], score confiance[], source[], date scraping)
-
-**Custom Taxonomies** :
-- `equipe` — lier articles à une ou plusieurs équipes
-- `competition` — Serie A, Coppa Italia, Squadra Azzurra
-
-**Duplicate content prevention** :
-.htaccess sur wp.vai-calcio.fr avec redirect 301 vers vai-calcio.fr (voir docs/wordpress-setup.md).
-
-### Cache Strategy
-
-**Cache serveur fichier JSON** (`lib/cache.ts`) :
-- Persiste sur disque (`.cache/api-cache.json`)
-- Survit aux redémarrages PM2
-- TTL par type de donnée
-
-**TTL par ressource** :
-- Classement : 24h (rebuild cron quotidien)
-- Résultats : 6h
-- Calendrier : 24h
-- Live scores : 30s (mémoire uniquement, pendant fenêtres de match)
-- Stats joueurs : 7 jours
-- Fiches équipes/logos TheSportsDB : 30 jours
-
-**Route caching Astro 5 experimental** :
-- Articles blog : SSR avec `cache.set({ maxAge: 3600, swr: 600, tags: ['blog', 'post-{id}'] })`
-- Invalidation via webhook `/api/revalidate`
-
-**Fallback** : Nginx proxy_cache (si route caching instable).
-
-### APIs Football
-
-**Multi-API strategy** (à confirmer avec APIs trouvées) :
-
-| API | Usage | Rate limit |
-|-----|-------|------------|
-| API-Football | Live scores, lineups, stats joueurs, arbitres | À confirmer |
-| Football-data.org | Classement, calendrier, résultats (backup) | À confirmer |
-| TheSportsDB | Logos équipes, photos stades, bannières (gratuit illimité) | Illimité |
-
-**Client abstraction** : `lib/football-api.ts` — abstraction multi-API avec fallback automatique.
-
-**Proxy endpoints** :
-- `/api/scores` — proxy API football (jamais exposé au client)
-- `/api/standings` — proxy classement
-
-**Détection fenêtres de match** :
-- Composant `LiveScores.tsx` : compare heure actuelle avec kick-off
-- Polling 30s actif uniquement si match en cours (kick-off - 15min → fin + 30min)
-- Sinon : affiche derniers scores statiques, zéro polling
-
-### Formations Probables — Scraper
-
-**Architecture** :
-- Docker + Python + Camoufox (anti-bot browser)
-- Sources : Sky Sport IT, Gazzetta dello Sport, TuttoSport, Corriere dello Sport
-- Logique : scrape → parse → calcul score confiance (joueur cité par N/M sources) → POST WordPress REST API
-- CPT WordPress `formation` avec ACF fields
-- Consommation via WPGraphQL dans Astro
-
-**Cron schedule** :
-- Jeudi 10h : scrape matchs samedi/dimanche
-- Samedi 8h : mise à jour pré-match
-- Mardi 10h : matchs en milieu de semaine (si applicable)
-
-### Newsletter
-
-**Provider** : Brevo (ex-Sendinblue)
-**Plan** : Gratuit (300 emails/jour, contacts illimités)
-
-**Workflow** :
-1. Formulaire dans Footer + sidebar homepage
-2. Endpoint SSR `/api/newsletter.ts` : validation email + ajout contact via Brevo API v3
-3. Email de bienvenue automatique via automation Brevo
-4. Envoi manuel newsletters depuis interface Brevo
-
-### SEO
-
-**Schema.org JSON-LD** :
-- `SportsEvent` — chaque match (date, lieu, équipes, score)
-- `SportsOrganization` — chaque équipe
-- `Article` / `NewsArticle` — chaque article
-- `BreadcrumbList` — fil d'ariane sur toutes les pages
-- `WebSite` + `SearchAction` — Pagefind searchbox
-
-**Meta tags** :
-- Articles : via RankMath SEO exposé par WPGraphQL
-- Pages statiques : frontmatter Astro
-
-**Sitemap** :
-- XML : `@astrojs/sitemap` (auto)
-- HTML : `/sitemap` pour utilisateurs
-
-**robots.txt** :
-- vai-calcio.fr : `Allow: /`, `Disallow: /api/`
-- wp.vai-calcio.fr : `Disallow: /` + meta noindex (via RankMath)
-
-### Sécurité
-
-- `/api/revalidate` : secret token (env var `REVALIDATE_SECRET`)
-- WordPress : désactiver XML-RPC, restreindre wp-json
-- Clés API football : jamais côté client, toujours proxy
-- `.env` pour secrets, `.env.example` versionné
-- Headers Nginx : X-Frame-Options, X-Content-Type-Options, CSP basique
-- wp.vai-calcio.fr : .htaccess redirect 301 (sécurité surface réduite)
-
-## Design System
-
-### Palette
-
-```css
-background: #F5F5F0      /* Blanc cassé */
-text: #111111            /* Noir */
-accent: #2D7A3A          /* Vert principal */
-accent-light: #E8F5E9    /* Vert très clair */
-separator: #E0E0E0       /* Séparateurs */
-card: #FFFFFF            /* Fond cards */
+# Note: Port 5432 is intentional (not 4321 default)
 ```
 
-### Typographie
+## Critical Architecture Patterns
 
-- **Titres** : Barlow Condensed (600, 700) — condensé, sportif
-- **Corps** : Inter (400, 500, 600) — lisible, neutre
-- **Self-hosted** : `/public/fonts/` (WOFF2)
-- **Font-display** : swap + preload poids critiques
+### 1. Rendering Strategy (Astro 5)
 
-### Principes
+**Default**: All pages are **static** (`output: 'static'` in astro.config.mjs)
 
-- Dense, éditorial (style journal sportif)
-- Mobile-first
-- Traits fins (borders 1px)
-- Zéro emoji, icônes minimales et fines
-- Grid dense : 2-3 colonnes desktop, 1 mobile
-- Sidebar droite (desktop) : classement + dernières news
+**SSR routes** need explicit `export const prerender = false`:
+- `/api/*` — All API routes (revalidate, newsletter, scores, standings)
+- `/blog/[slug]` — Individual articles (planned SSR + cache)
 
-## Structure des Fichiers
+**Static with getStaticPaths** (dynamic routes):
+- `/equipes/[slug]` — Team pages (20 teams)
+- `/arbitres/[slug]` — Referee pages (15 referees)
+- `/joueurs/[slug]` — Player pages
 
-```
-calcio/
-├── astro.config.mjs
-├── tailwind.config.mjs
-├── package.json
-├── tsconfig.json
-├── .env.example
-├── CLAUDE.md
-├── README.md
-├── public/
-│   ├── favicon.ico
-│   ├── robots.txt
-│   └── fonts/                    # Fonts self-hosted WOFF2
-├── src/
-│   ├── layouts/
-│   │   ├── BaseLayout.astro      # HTML shell, head, meta, fonts
-│   │   ├── ArticleLayout.astro   # Layout article + sidebar
-│   │   └── PageLayout.astro      # Layout page simple
-│   ├── components/
-│   │   ├── Header.astro
-│   │   ├── Footer.astro
-│   │   ├── Sidebar.astro
-│   │   ├── ArticleCard.astro
-│   │   ├── ArticleGrid.astro
-│   │   ├── StandingsTable.astro
-│   │   ├── MatchScoreBanner.astro
-│   │   ├── TeamCard.astro
-│   │   ├── PlayerCard.astro
-│   │   ├── FormationVisual.astro
-│   │   ├── NewsletterForm.astro
-│   │   ├── Breadcrumb.astro
-│   │   ├── Pagination.astro
-│   │   ├── SEOHead.astro
-│   │   └── islands/
-│   │       ├── LiveScores.tsx    # Preact — bandeau live (client:load)
-│   │       └── LiveStandings.tsx # Preact — classement live (client:load)
-│   ├── lib/
-│   │   ├── wordpress.ts          # Client WPGraphQL + queries
-│   │   ├── football-api.ts       # Client API football (multi-API)
-│   │   ├── formations.ts         # Logique formations probables
-│   │   ├── seo.ts                # Helpers JSON-LD, meta tags
-│   │   ├── cache.ts              # Cache fichier JSON persistant
-│   │   └── utils.ts              # Formatage dates, slugs, etc.
-│   ├── pages/
-│   │   ├── index.astro           # Homepage
-│   │   ├── serie-a.astro         # Hub éditorial Serie A
-│   │   ├── classement.astro
-│   │   ├── resultats-calendrier.astro
-│   │   ├── formations-probables.astro
-│   │   ├── transferts.astro
-│   │   ├── coppa-italia.astro
-│   │   ├── equipe-nationale.astro
-│   │   ├── contact.astro
-│   │   ├── mentions-legales.astro
-│   │   ├── a-propos.astro
-│   │   ├── sitemap.astro         # Sitemap HTML
-│   │   ├── 404.astro
-│   │   ├── equipes/
-│   │   │   └── [slug].astro      # Fiche équipe
-│   │   ├── joueurs/
-│   │   │   └── [slug].astro      # Fiche joueur
-│   │   ├── arbitres/
-│   │   │   └── [slug].astro      # Fiche arbitre
-│   │   ├── blog/
-│   │   │   ├── [slug].astro      # Article individuel (SSR + cache)
-│   │   │   └── index.astro       # Liste articles
-│   │   ├── tag/
-│   │   │   └── [slug].astro
-│   │   ├── categorie/
-│   │   │   └── [slug].astro
-│   │   └── api/
-│   │       ├── revalidate.ts     # Webhook WordPress (SSR)
-│   │       ├── newsletter.ts     # Inscription newsletter (SSR)
-│   │       ├── scores.ts         # Proxy API football (SSR)
-│   │       └── standings.ts      # Proxy classement (SSR)
-│   └── styles/
-│       └── global.css            # Tailwind base + custom styles
-├── scripts/
-│   ├── scraper/                  # Python scraper formations
-│   │   ├── Dockerfile
-│   │   ├── requirements.txt
-│   │   ├── scraper.py
-│   │   └── sources.json
-│   └── cron/
-│       └── update-data.sh        # Cron rebuild classement/résultats
-├── docs/
-│   └── wordpress-setup.md        # Instructions WordPress
-└── docker-compose.yml            # Docker scraper
-```
+### 2. Multi-API Football Data with Fallback
 
-## Conventions de Code
-
-### Astro Components
-
-- Fichiers `.astro` pour composants statiques
-- Fichiers `.tsx` (Preact) uniquement pour interactivité client-side
-- Props TypeScript typées
-
-```astro
----
-interface Props {
-  title: string;
-  description?: string;
-}
-
-const { title, description } = Astro.props;
----
-
-<div>
-  <h1>{title}</h1>
-  {description && <p>{description}</p>}
-</div>
-```
-
-### Preact Islands
-
-Utiliser `client:load` uniquement si nécessaire au chargement initial.
-Préférer `client:visible` ou `client:idle` pour optimiser LCP.
-
-```astro
----
-import LiveScores from '@/components/islands/LiveScores';
----
-
-<LiveScores client:load />
-```
-
-### GraphQL Queries
-
-Centraliser dans `lib/wordpress.ts`. Typage TypeScript strict.
+`lib/football-api.ts` implements a **multi-API strategy** with automatic fallback to mock data:
 
 ```typescript
-export async function getPosts(limit = 10) {
-  const query = `
-    query GetPosts($limit: Int!) {
-      posts(first: $limit, where: {orderby: {field: DATE, order: DESC}}) {
-        nodes {
-          id
-          title
-          slug
-          excerpt
-          date
-          featuredImage {
-            node {
-              sourceUrl
-            }
-          }
-        }
+// Always wrap API calls with try-catch to fallback to mock data
+export async function getTeam(idOrSlug: string | number) {
+  return getCached(`team-${idOrSlug}`, TTL.WEEK, async () => {
+    if (API_CONFIG.theSportsDB.key) {
+      try {
+        return await fetchTheSportsDBTeam(idOrSlug);
+      } catch (error) {
+        console.warn('API call failed, using mock data:', error);
+        // Fall through to mock data
       }
     }
-  `;
-
-  const data = await graphQLClient.request(query, { limit });
-  return data.posts.nodes;
-}
-```
-
-### Cache Pattern
-
-```typescript
-import { getCached } from '@/lib/cache';
-
-const standings = await getCached(
-  'standings-serie-a',
-  24 * 60 * 60 * 1000, // 24h
-  async () => {
-    return await footballAPI.getStandings('SA');
-  }
-);
-```
-
-### API Routes (SSR)
-
-```typescript
-// src/pages/api/newsletter.ts
-export const prerender = false;
-
-export async function POST({ request }: APIContext) {
-  const { email } = await request.json();
-
-  // Validation
-  if (!email || !email.includes('@')) {
-    return new Response(JSON.stringify({ error: 'Invalid email' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Brevo API call...
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    return MOCK_TEAMS.find(/* ... */);
   });
 }
 ```
 
-## Déploiement
+**Critical**: Never throw errors from API functions. Always return mock data as fallback.
 
-### Serveur KimSufi
+### 3. File-Based Cache (Persists Across Restarts)
 
-**Specs** (à confirmer) :
-- CPU : Intel Xeon E5-1650v4 — 6c/12t @ 3.6 GHz
-- RAM : 64 Go DDR4
-- Stockage : 2×450 Go SSD NVMe (Soft RAID)
-- OS : AlmaLinux 9
-- DC : Gravelines (eu-west-gra)
+`lib/cache.ts` uses **JSON file cache** (`.cache/api-cache.json`) that survives PM2 restarts:
 
-### PM2 Configuration
-
-`ecosystem.config.js` :
-
-```javascript
-module.exports = {
-  apps: [{
-    name: 'vai-calcio',
-    cwd: '/var/www/vai-calcio',
-    script: 'node_modules/.bin/astro',
-    args: 'dev --host 0.0.0.0 --port 5432',
-    instances: 1,
-    exec_mode: 'fork',
-    watch: false,
-    env: {
-      NODE_ENV: 'production',
-    },
-  }],
-};
+```typescript
+const standings = await getCached(
+  'standings-serie-a',
+  24 * 60 * 60 * 1000,  // 24h TTL
+  async () => await getStandings()
+);
 ```
 
-### Nginx Configuration
+**TTL Strategy**:
+- Standings/Calendar: 24h
+- Match results: 6h
+- Player/Team stats: 7 days
+- Live scores: 30s (memory only during match windows)
 
-```nginx
-server {
-    listen 80;
-    server_name vai-calcio.fr www.vai-calcio.fr;
+### 4. WordPress Headless Integration
 
-    location / {
-        proxy_pass http://127.0.0.1:4321;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+**URL**: wp.vai-calcio.fr (with .htaccess redirect to prevent duplicate content)
+
+**GraphQL**: All queries centralized in `lib/wordpress.ts`
+- `getPosts(limit, offset)` — Get blog posts
+- `getPostsByCategory(category, limit, offset)` — Filtered posts
+- `getPostBySlug(slug)` — Single post
+
+**Webhook**: `/api/revalidate` invalidates cache when WP publishes content (requires `REVALIDATE_SECRET`)
+
+### 5. Design System (Immutable)
+
+**Colors** (defined in `tailwind.config.mjs`):
+- `background: #F5F5F0` (off-white)
+- `accent: #2D7A3A` (green)
+- `accent-light: #E8F5E9`
+- `separator: #E0E0E0`
+
+**Typography**:
+- **Titles**: Barlow Condensed (600, 700) — condensed, sporty
+- **Body**: Inter (400, 500, 600) — readable
+- **Self-hosted**: All fonts in `/public/fonts/` (WOFF2)
+
+**Principles**:
+- Dense, editorial style (newspaper-like)
+- Mobile-first
+- Thin borders (1px)
+- No emojis
+- Grid-based layouts (3-4 columns on desktop)
+
+## Common Pitfalls
+
+### 1. Dynamic Route Pages Without getStaticPaths
+
+**Problem**: Pages like `/equipes/[slug].astro` crash without `getStaticPaths()`
+
+**Solution**:
+```astro
+---
+import { getTeams } from '@/lib/football-api';
+
+export async function getStaticPaths() {
+  const teams = await getTeams();
+  return teams.map((team) => ({
+    params: { slug: team.name.toLowerCase().replace(/\s+/g, '-') },
+  }));
+}
+---
+```
+
+### 2. JSX Template Literals in Astro
+
+**Problem**: Template literals inside JSX `class` attributes cause syntax errors
+
+**Wrong**:
+```astro
+<tr class={`base-classes ${dynamicClass}`}>
+```
+
+**Right**:
+```astro
+<tr class={'base-classes ' + dynamicClass}>
+```
+
+Or pre-compute in frontmatter:
+```astro
+---
+const items = data.map(item => ({
+  ...item,
+  computedClass: getClass(item)  // Pre-compute before JSX
+}));
+---
+<tr class={item.computedClass}>
+```
+
+### 3. Mock Data Generation
+
+When generating mock matches, **Serie A = 10 matches per matchday** (20 teams / 2):
+
+```typescript
+// Generate 10 finished matches (last matchday) + 10 scheduled (next matchday)
+for (let i = 0; i < 20; i++) {
+  const isFinished = i < 10;
+  const teamIndex = i % 10;  // Pair teams: 0-1, 2-3, 4-5, etc.
+  // ...
 }
 ```
 
-### Déploiement Script
+### 4. Deployment Zip Creation
 
-`deploy.sh` :
+**Wrong**: `zip -r site.zip dist/` → creates `dist/` folder inside zip
 
+**Right**:
 ```bash
-#!/bin/bash
-set -e
-
-echo "Building..."
-npm run build
-
-echo "Deploying to KimSufi..."
-rsync -avz --delete \
-  --exclude node_modules \
-  --exclude .git \
-  --exclude .env \
-  ./ user@kimsufi-ip:/var/www/vai-calcio/
-
-echo "Restarting PM2..."
-ssh user@kimsufi-ip "cd /var/www/vai-calcio && pm2 restart vai-calcio"
-
-echo "Deployment complete!"
+cd dist && zip -r ../vai-calcio-fr.zip .
 ```
 
-## Variables d'Environnement
+Use **fixed filename** (no timestamps) to overwrite previous zip.
 
-Voir `.env.example` pour la liste complète.
+## Project-Specific Conventions
 
-**Critiques** :
+### File Naming
+
+- Components: PascalCase (`ArticleCard.astro`)
+- Pages: kebab-case (`resultats-calendrier.astro`)
+- Lib utilities: camelCase (`football-api.ts`)
+
+### Component Organization
+
+- **Layouts**: `BaseLayout` (HTML shell) → `PageLayout` (breadcrumbs) → `ArticleLayout` (sidebar)
+- **Islands**: Preact components in `components/islands/` (use `client:load` sparingly)
+- **Lib**: Pure functions, no side effects, always typed
+
+### GraphQL Query Pattern
+
+Centralize in `lib/wordpress.ts` with consistent structure:
+
+```typescript
+export async function getPostsByCategory(category: string, limit = 10, offset = 0) {
+  const query = `
+    query GetPostsByCategory($category: String!, $limit: Int!, $offset: Int!) {
+      posts(
+        first: $limit
+        after: $offset
+        where: { categoryName: $category, orderby: { field: DATE, order: DESC } }
+      ) {
+        nodes { /* fields */ }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  `;
+  const data = await graphQLClient.request(query, { category, limit, offset });
+  return { posts: data.posts.nodes, total: data.posts.pageInfo.total };
+}
+```
+
+## Development Workflow
+
+### Local Development
+
+1. Ensure WordPress is running at `wp.vai-calcio.fr` (optional)
+2. Copy `.env.example` to `.env`
+3. Run `npm run dev` → http://localhost:5432
+4. All API calls fallback to mock data if not configured
+
+### Adding New Pages
+
+1. Static page: Create in `src/pages/`
+2. Dynamic page: Add `getStaticPaths()` + `export const prerender = true`
+3. SSR page: Add `export const prerender = false`
+4. Update `src/components/Header.astro` navigation if needed
+
+### Adding New API Endpoints
+
+1. Create in `src/pages/api/` with `.ts` extension
+2. Add `export const prerender = false`
+3. Return `new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })`
+4. Add CORS headers if needed for client-side fetch
+
+## Key Environment Variables
+
+**Required for production**:
 - `WORDPRESS_GRAPHQL_URL` — https://wp.vai-calcio.fr/graphql
-- `REVALIDATE_SECRET` — Token sécurisé pour webhook
-- `BREVO_API_KEY` — Clé API Brevo
-- `BREVO_LIST_ID` — ID liste newsletter Brevo
+- `REVALIDATE_SECRET` — Webhook secret token
+- `BREVO_API_KEY` — Newsletter (Brevo/Sendinblue)
+- `BREVO_LIST_ID` — Newsletter list ID
 
-**APIs Football** (à configurer selon APIs trouvées) :
-- `FOOTBALL_API_KEY`
-- `FOOTBALL_DATA_API_KEY`
-- `THESPORTSDB_API_KEY` — Toujours "1" (gratuit)
+**Optional (fallback to mock data)**:
+- `FOOTBALL_API_KEY` — API-Football
+- `FOOTBALL_DATA_API_KEY` — Football-data.org
+- `THESPORTSDB_API_KEY` — Always "1" (free tier)
 
-## Phase de Développement
+## Resources
 
-**Phase 1 — Core MVP** (Semaine 1-2) :
-- ✅ Init Astro 5 + dépendances
-- 🔲 CLAUDE.md (ce fichier)
-- 🔲 Layouts + composants core
-- 🔲 Lib WordPress GraphQL
-- 🔲 Pages core (homepage, blog, légales)
-- 🔲 Pagefind
-- 🔲 SEO
-- 🔲 Newsletter
-- 🔲 Webhook revalidate
-- 🔲 Déploiement PM2 + Nginx
-
-**Phase 2 — Contenu sportif** (Semaine 3) :
-- 🔲 Intégration API football
-- 🔲 Fiches équipes/joueurs/arbitres
-- 🔲 Résultats/calendrier
-- 🔲 Hub éditorial Serie A
-- 🔲 Sitemap HTML
-
-**Phase 3 — Live + Formations** (Semaine 4+) :
-- 🔲 Îlots Preact live
-- 🔲 Détection fenêtres de match + polling
-- 🔲 Scraper formations probables
-- 🔲 Page formations avec visualisation terrain
-- 🔲 Cron jobs
-
-## Tests Manuels
-
-**Phase 1** :
-- [ ] Homepage charge en < 2s (Lighthouse > 90)
-- [ ] Article WordPress publié → visible en < 30s via webhook
-- [ ] wp.vai-calcio.fr redirige vers vai-calcio.fr (sauf wp-admin)
-- [ ] Newsletter : inscription fonctionne, email de bienvenue reçu
-- [ ] Sitemap XML accessible et valide
-- [ ] Mobile : toutes pages lisibles et navigables
-- [ ] JSON-LD valide (Google Rich Results Test)
-
-**Phase 2** :
-- [ ] Fiches équipes avec données API correctes
-- [ ] Classement à jour
-- [ ] Pagefind : recherche article par titre fonctionne
-- [ ] Pages tag/catégorie affichent bons articles
-
-**Phase 3** :
-- [ ] Live scores : polling actif uniquement pendant matchs
-- [ ] Live scores : zéro requête API hors fenêtre de match
-- [ ] Formations : données scrapées correctes, scores confiance cohérents
-- [ ] Formations : visualisation terrain lisible sur mobile
-
-## Ressources
-
-- [Astro 5 Documentation](https://docs.astro.build/)
-- [WPGraphQL](https://www.wpgraphql.com/)
-- [Brevo API v3](https://developers.brevo.com/)
-- [Pagefind](https://pagefind.app/)
-- [TheSportsDB API](https://www.thesportsdb.com/api.php)
+- **Architecture details**: See full project plan in `.claude/plans/`
+- **WordPress setup**: `docs/wordpress-setup.md`
+- **API documentation**: Comments in `lib/football-api.ts`
+- **Mock data**: All mock data defined at top of `lib/football-api.ts` (20 teams, 15 referees, etc.)
 
 ## Contact
 
-**Directeur de publication** : Anthony Russo
-**Email** : contact@vai-calcio.fr
+**Owner**: Anthony Russo
+**Email**: contact@vai-calcio.fr

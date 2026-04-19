@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  formations-scraper:
+    build:
+      context: ./scripts/scraper
+      dockerfile: Dockerfile
+    container_name: vai-calcio-formations-scraper
+    environment:
+      - WORDPRESS_API_URL=${WORDPRESS_API_URL:-https://wp.vai-calcio.fr/wp-json/wp/v2/formation}
+      - WORDPRESS_USER=${WORDPRESS_USER}
+      - WORDPRESS_PASSWORD=${WORDPRESS_PASSWORD}
+      - HEADLESS=true
+    volumes:
+      - ./scripts/scraper:/app
+      - scraper-cache:/app/.cache
+    restart: unless-stopped
+    # Run on schedule via cron, not continuously
+    profiles:
+      - manual
+
+volumes:
+  scraper-cache:
+    driver: local

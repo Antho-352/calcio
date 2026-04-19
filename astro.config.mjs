@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
-// import preact from '@astrojs/preact'; // Disabled for now - Phase 3
+// import preact from '@astrojs/preact'; // TODO: Fix compatibility issue with Astro 5
 import pagefind from 'astro-pagefind';
 
 // https://astro.build/config
@@ -21,7 +21,7 @@ export default defineConfig({
       filter: (page) => !page.includes('/api/'),
       customPages: [],
     }),
-    // preact({ compat: true }), // Phase 3 - Live components
+    // preact({ compat: true }), // TODO: Fix compatibility issue with Astro 5
     pagefind(),
   ],
   vite: {

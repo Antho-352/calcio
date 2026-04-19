@@ -1,4 +1,9 @@
 ---
+import { getTeams } from '@/lib/football-api';
+
+// Fetch all teams for menu
+const teams = await getTeams();
+
 const navItems = [
   { label: 'Accueil', href: '/' },
   { label: 'Serie A', href: '/serie-a' },
@@ -6,8 +11,19 @@ const navItems = [
   { label: 'Résultats & Calendrier', href: '/resultats-calendrier' },
   { label: 'Formations Probables', href: '/formations-probables' },
   { label: 'Transferts', href: '/transferts' },
-  { label: 'Coppa Italia', href: '/coppa-italia' },
-  { label: 'Squadra Azzurra', href: '/equipe-nationale' },
+  {
+    label: 'Équipes',
+    submenu: teams.map((team) => ({
+      label: team.name,
+      href: `/equipes/${team.name.toLowerCase().replace(/\s+/g, '-')}`,
+    })),
+  },
+  {
+    label: 'Statistiques',
+    submenu: [
+      { label: 'Arbitres', href: '/arbitres' },
+    ],
+  },
 ];
 
 const currentPath = Astro.url.pathname;
@@ -62,20 +78,41 @@ const currentPath = Astro.url.pathname;
     <nav class="hidden md:block border-t border-separator">
       <ul class="flex items-center gap-1">
         {
-          navItems.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class={`block px-3 py-3 text-sm font-medium transition-colors hover:text-accent ${
-                  currentPath === item.href
-                    ? 'text-accent border-b-2 border-accent'
-                    : 'text-text'
-                }`}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))
+          navItems.map((item) =>
+            'submenu' in item && item.submenu ? (
+              <li class="relative group">
+                <button
+                  class="block px-3 py-3 text-sm font-medium transition-colors hover:text-accent text-text"
+                  type="button"
+                >
+                  {item.label} ▾
+                </button>
+                <div class="absolute left-0 top-full hidden group-hover:block bg-white border border-separator shadow-lg min-w-[200px] max-h-[400px] overflow-y-auto z-50">
+                  {item.submenu.map((subitem) => (
+                    <a
+                      href={subitem.href}
+                      class="block px-4 py-2 text-sm hover:bg-accent-light hover:text-accent transition-colors"
+                    >
+                      {subitem.label}
+                    </a>
+                  ))}
+                </div>
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={item.href}
+                  class={`block px-3 py-3 text-sm font-medium transition-colors hover:text-accent ${
+                    currentPath === item.href
+                      ? 'text-accent border-b-2 border-accent'
+                      : 'text-text'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              </li>
+            )
+          )
         }
       </ul>
     </nav>
@@ -93,20 +130,43 @@ const currentPath = Astro.url.pathname;
         </li>
 
         {
-          navItems.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class={`block px-4 py-2 text-sm font-medium transition-colors hover:text-accent ${
-                  currentPath === item.href
-                    ? 'text-accent bg-accent-light'
-                    : 'text-text'
-                }`}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))
+          navItems.map((item, index) =>
+            'submenu' in item && item.submenu ? (
+              <li>
+                <button
+                  class="w-full text-left px-4 py-2 text-sm font-medium text-text flex items-center justify-between mobile-submenu-toggle"
+                  type="button"
+                  data-index={index}
+                >
+                  {item.label}
+                  <span class="mobile-submenu-arrow">▾</span>
+                </button>
+                <div class="hidden mobile-submenu bg-accent-light" data-index={index}>
+                  {item.submenu.map((subitem) => (
+                    <a
+                      href={subitem.href}
+                      class="block px-8 py-2 text-sm text-text hover:text-accent"
+                    >
+                      {subitem.label}
+                    </a>
+                  ))}
+                </div>
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={item.href}
+                  class={`block px-4 py-2 text-sm font-medium transition-colors hover:text-accent ${
+                    currentPath === item.href
+                      ? 'text-accent bg-accent-light'
+                      : 'text-text'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              </li>
+            )
+          )
         }
       </ul>
     </nav>
@@ -120,6 +180,23 @@ const currentPath = Astro.url.pathname;
 
   toggle?.addEventListener('click', () => {
     menu?.classList.toggle('hidden');
+  });
+
+  // Mobile submenu toggles
+  const submenuToggles = document.querySelectorAll('.mobile-submenu-toggle');
+  submenuToggles.forEach((button) => {
+    button.addEventListener('click', () => {
+      const index = button.getAttribute('data-index');
+      const submenu = document.querySelector(
+        `.mobile-submenu[data-index="${index}"]`
+      );
+      const arrow = button.querySelector('.mobile-submenu-arrow');
+
+      submenu?.classList.toggle('hidden');
+      if (arrow) {
+        arrow.textContent = submenu?.classList.contains('hidden') ? '▾' : '▴';
+      }
+    });
   });
 
   // Search functionality - redirect to /recherche

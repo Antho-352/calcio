@@ -1,14 +1,15 @@
 ---
-import ArticleLayout from '@/layouts/ArticleLayout.astro';
-import ArticleGrid from '@/components/ArticleGrid.astro';
-import MatchScoreBanner from '@/components/MatchScoreBanner.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
 import { getPosts } from '@/lib/wordpress';
+import { getStandings, getMatches } from '@/lib/football-api';
 import { generateWebSiteSchema, renderJsonLd } from '@/lib/seo';
 
-// Fetch latest posts (placeholder data if WordPress not configured yet)
+// Fetch latest posts
 let posts: any[] = [];
 try {
-  const result = await getPosts(6);
+  const result = await getPosts(12);
   posts = result.posts.map((post) => ({
     title: post.title,
     excerpt: post.excerpt,
@@ -18,68 +19,268 @@ try {
     category: post.categories?.nodes[0]?.name,
   }));
 } catch (error) {
-  // WordPress not configured yet, use placeholder
   console.warn('WordPress not configured, using placeholder data');
   posts = [
     {
       title: 'Bienvenue sur Vai Calcio',
-      excerpt: 'Le site est en construction. Bientôt toute l\'actualité du football italien.',
+      excerpt:
+        'Le site de référence pour toute l\'actualité du football italien. Retrouvez les dernières news de Serie A, les résultats en direct, le classement actualisé et les analyses approfondies de chaque journée.',
       slug: 'bienvenue',
       date: new Date().toISOString(),
       category: 'Actualités',
+      image: 'https://via.placeholder.com/800x400/2D7A3A/ffffff?text=Vai+Calcio',
     },
   ];
 }
+
+// Featured article (first one)
+const featuredArticle = posts[0];
+const otherArticles = posts.slice(1, 9);
+
+// Fetch standings (all 20 teams) and matches
+const standings = await getStandings();
+const allMatches = await getMatches();
+const recentMatches = allMatches
+  .filter((m) => m.status === 'finished')
+  .slice(0, 10);
+
+// Get current matchday from matches
+const currentMatchday = 33; // Mock - should come from API
+
+// Prepare standings with computed classes
+const standingsWithClasses = standings.map((standing) => {
+  let zoneColor = '';
+  if (standing.position <= 4) {
+    zoneColor = 'border-l-2 border-l-blue-600';
+  } else if (standing.position === 5) {
+    zoneColor = 'border-l-2 border-l-orange-500';
+  } else if (standing.position === 6) {
+    zoneColor = 'border-l-2 border-l-green-600';
+  } else if (standing.position >= 18) {
+    zoneColor = 'border-l-2 border-l-red-600';
+  }
+  return { ...standing, zoneColor };
+});
 
 const siteUrl = Astro.site?.toString() || 'https://vai-calcio.fr';
 const websiteSchema = generateWebSiteSchema(siteUrl);
 ---
 
-<ArticleLayout
+<BaseLayout
   title="Vai Calcio - Actualité du football italien"
   description="Toute l'actualité du football italien : Serie A, Coppa Italia, Squadra Azzurra. News, résultats, classements et analyses."
 >
-  <!-- JSON-LD -->
+  <Header />
+
   <script type="application/ld+json" set:html={renderJsonLd(websiteSchema)} />
 
-  <!-- Hero Section -->
-  <div class="mb-8">
-    <h1 class="text-4xl md:text-5xl font-condensed font-bold text-text mb-4">
-      Vai Calcio
-    </h1>
-    <p class="text-lg text-text/70">
-      Toute l'actualité du football italien : Serie A, Coppa Italia, Squadra
-      Azzurra.
-    </p>
-  </div>
+  <main class="container mx-auto px-4 py-8">
+    <!-- Grid: Sidebar Left + Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- LEFT SIDEBAR -->
+      <aside class="lg:col-span-3 space-y-6">
+        <!-- Classement complet (20 équipes) -->
+        <div class="card">
+          <div class="bg-accent text-white px-4 py-3">
+            <h2 class="font-condensed font-semibold uppercase text-sm">
+              Classement Serie A
+            </h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-gray-50 border-b border-separator">
+                <tr>
+                  <th class="text-left px-2 py-1 w-6">#</th>
+                  <th class="text-left px-1 py-1">Équipe</th>
+                  <th class="text-center px-1 py-1 w-8">Pts</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-separator">
+                {standingsWithClasses.map((standing) => (
+                  <tr class={'hover:bg-accent-light transition-colors ' + standing.zoneColor}>
+                    <td class="px-2 py-1 font-semibold text-text/80">
+                      {standing.position}
+                    </td>
+                    <td class="px-1 py-1">
+                      <div class="flex items-center gap-1">
+                        {standing.team.logo && (
+                          <img
+                            src={standing.team.logo}
+                            alt={standing.team.name}
+                            class="w-4 h-4 object-contain"
+                          />
+                        )}
+                        <span class="font-medium truncate text-xs">
+                          {standing.team.code}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-1 py-1 text-center font-bold">
+                      {standing.points}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div class="bg-gray-50 px-2 py-2 border-t border-separator text-center">
+            <a
+              href="/classement"
+              class="text-xs text-accent font-medium hover:underline"
+            >
+              Voir le classement détaillé →
+            </a>
+          </div>
+        </div>
 
-  <!-- Latest Articles -->
-  <section class="mb-12">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-condensed font-semibold">Derniers articles</h2>
-      <a href="/blog" class="text-accent font-medium hover:underline">
-        Voir tous les articles →
-      </a>
+        <!-- Derniers résultats -->
+        <div class="card">
+          <div class="bg-accent text-white px-4 py-3">
+            <h2 class="font-condensed font-semibold uppercase text-sm">
+              {currentMatchday}ème journée
+            </h2>
+          </div>
+          <div class="divide-y divide-separator">
+            {
+              recentMatches.map((match) => (
+                <div class="p-2">
+                  <div class="flex items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-1 flex-1 min-w-0">
+                      {match.homeTeam.logo && (
+                        <img
+                          src={match.homeTeam.logo}
+                          alt={match.homeTeam.name}
+                          class="w-3 h-3 object-contain flex-shrink-0"
+                        />
+                      )}
+                      <span class="font-medium truncate">
+                        {match.homeTeam.code || match.homeTeam.name.substring(0, 3).toUpperCase()}
+                      </span>
+                    </div>
+                    {match.score && (
+                      <span class="font-bold text-accent text-xs px-1">
+                        {match.score.home} - {match.score.away}
+                      </span>
+                    )}
+                    <div class="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                      <span class="font-medium truncate">
+                        {match.awayTeam.code || match.awayTeam.name.substring(0, 3).toUpperCase()}
+                      </span>
+                      {match.awayTeam.logo && (
+                        <img
+                          src={match.awayTeam.logo}
+                          alt={match.awayTeam.name}
+                          class="w-3 h-3 object-contain flex-shrink-0"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+          <div class="bg-gray-50 px-2 py-2 border-t border-separator text-center">
+            <a
+              href="/resultats-calendrier"
+              class="text-xs text-accent font-medium hover:underline"
+            >
+              Tous les résultats →
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <div class="lg:col-span-9 space-y-8">
+        <!-- Featured Article (full width) -->
+        {
+          featuredArticle && (
+            <article class="card overflow-hidden hover:shadow-lg transition-shadow">
+              <a href={`/blog/${featuredArticle.slug}`}>
+                {featuredArticle.image && (
+                  <img
+                    src={featuredArticle.image}
+                    alt={featuredArticle.title}
+                    class="w-full h-64 object-cover"
+                  />
+                )}
+                <div class="p-6">
+                  {featuredArticle.category && (
+                    <span class="inline-block bg-accent text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                      {featuredArticle.category}
+                    </span>
+                  )}
+                  <h2 class="text-3xl font-condensed font-bold mb-3 hover:text-accent transition-colors">
+                    {featuredArticle.title}
+                  </h2>
+                  <p class="text-text/70 mb-4 leading-relaxed">
+                    {featuredArticle.excerpt}
+                  </p>
+                  <div class="flex items-center gap-4 text-sm text-text/60">
+                    <time>
+                      {new Date(featuredArticle.date).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </time>
+                  </div>
+                </div>
+              </a>
+            </article>
+          )
+        }
+
+        <!-- Other Articles Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {
+            otherArticles.map((article) => (
+              <article class="card overflow-hidden hover:shadow-lg transition-shadow">
+                <a href={`/blog/${article.slug}`}>
+                  {article.image && (
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      class="w-full h-40 object-cover"
+                    />
+                  )}
+                  <div class="p-4">
+                    {article.category && (
+                      <span class="inline-block bg-accent-light text-accent text-xs font-semibold px-2 py-1 rounded mb-2">
+                        {article.category}
+                      </span>
+                    )}
+                    <h3 class="font-condensed font-semibold text-lg mb-2 hover:text-accent transition-colors line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p class="text-sm text-text/70 line-clamp-3 mb-3">
+                      {article.excerpt}
+                    </p>
+                    <time class="text-xs text-text/60">
+                      {new Date(article.date).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </time>
+                  </div>
+                </a>
+              </article>
+            ))
+          }
+        </div>
+
+        <!-- See all link -->
+        <div class="text-center">
+          <a
+            href="/blog"
+            class="inline-block text-accent font-medium hover:underline"
+          >
+            Voir tous les articles →
+          </a>
+        </div>
+      </div>
     </div>
+  </main>
 
-    <ArticleGrid articles={posts} />
-  </section>
-
-  <!-- Placeholder for match scores banner -->
-  <section class="mb-12">
-    <div class="card p-6">
-      <h2 class="text-xl font-condensed font-semibold mb-4">
-        Résultats & Calendrier
-      </h2>
-      <p class="text-sm text-text/70">
-        Les derniers résultats et prochains matchs seront bientôt disponibles.
-      </p>
-      <a
-        href="/resultats-calendrier"
-        class="inline-block mt-4 text-accent font-medium hover:underline"
-      >
-        Voir le calendrier complet →
-      </a>
-    </div>
-  </section>
-</ArticleLayout>
+  <Footer />
+</BaseLayout>

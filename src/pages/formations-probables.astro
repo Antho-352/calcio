@@ -1,7 +1,63 @@
 ---
 import PageLayout from '@/layouts/PageLayout.astro';
+import FormationVisual from '@/components/FormationVisual.astro';
 
-// TODO: Fetch formations from WordPress CPT when scraper is implemented (Phase 3)
+// TODO: Fetch formations from WordPress CPT (getFormations function to be implemented)
+// For now, using mock data to demonstrate the visualization
+
+interface Formation {
+  id: string;
+  match: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeFormation: string;
+  awayFormation: string;
+  homePlayers: Array<{ name: string; position: string; confidence: number; sources: string[] }>;
+  awayPlayers: Array<{ name: string; position: string; confidence: number; sources: string[] }>;
+  lastUpdated: string;
+}
+
+// Mock formations data (will be replaced by WordPress CPT data)
+const mockFormations: Formation[] = [
+  {
+    id: '1',
+    match: 'Juventus - Inter',
+    homeTeam: 'Juventus',
+    awayTeam: 'Inter',
+    homeFormation: '3-5-2',
+    awayFormation: '3-5-2',
+    homePlayers: [
+      { name: 'Szczesny', position: 'GK', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Danilo', position: 'DC', confidence: 90, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Bremer', position: 'DC', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Alex Sandro', position: 'DC', confidence: 75, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Cuadrado', position: 'MD', confidence: 85, sources: ['Gazzetta', 'Sky', 'Corriere'] },
+      { name: 'Locatelli', position: 'MC', confidence: 90, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Rabiot', position: 'MC', confidence: 75, sources: ['Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Kostic', position: 'MG', confidence: 80, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Chiesa', position: 'MG', confidence: 65, sources: ['Gazzetta', 'Corriere'] },
+      { name: 'Vlahovic', position: 'AT', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Di Maria', position: 'AT', confidence: 85, sources: ['Gazzetta', 'Sky', 'Corriere'] },
+    ],
+    awayPlayers: [
+      { name: 'Onana', position: 'GK', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Pavard', position: 'DC', confidence: 90, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Acerbi', position: 'DC', confidence: 95, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Bastoni', position: 'DC', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Dumfries', position: 'MD', confidence: 80, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Barella', position: 'MC', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Calhanoglu', position: 'MC', confidence: 90, sources: ['Gazzetta', 'Sky', 'Corriere'] },
+      { name: 'Mkhitaryan', position: 'MC', confidence: 75, sources: ['Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Dimarco', position: 'MG', confidence: 85, sources: ['Gazzetta', 'Sky', 'TuttoSport'] },
+      { name: 'Lautaro', position: 'AT', confidence: 100, sources: ['Gazzetta', 'Sky', 'TuttoSport', 'Corriere'] },
+      { name: 'Thuram', position: 'AT', confidence: 80, sources: ['Gazzetta', 'Sky', 'Corriere'] },
+    ],
+    lastUpdated: new Date().toISOString(),
+  },
+];
+
+const formations = mockFormations;
+const hasFormations = formations.length > 0;
 ---
 
 <PageLayout
@@ -19,23 +75,63 @@ import PageLayout from '@/layouts/PageLayout.astro';
     </p>
   </div>
 
-  <!-- Info Banner -->
-  <div class="card p-6 mb-8 bg-accent-light">
-    <div class="flex items-start gap-4">
-      <div class="text-3xl">⚠️</div>
-      <div>
-        <h2 class="font-condensed font-semibold text-lg mb-2">
-          Fonctionnalité à venir
-        </h2>
-        <p class="text-sm text-text/80 leading-relaxed">
-          Les formations probables seront automatiquement scrapées depuis les
-          sources italiennes de référence (Gazzetta dello Sport, Sky Sport
-          Italia, TuttoSport, Corriere dello Sport) et publiées avant chaque
-          journée.
-        </p>
+  <!-- Formations display -->
+  {
+    hasFormations ? (
+      <div class="mb-8 space-y-8">
+        {formations.map((formation) => (
+          <div class="card p-6">
+            <div class="mb-6 text-center">
+              <h2 class="font-condensed font-semibold text-2xl mb-2">
+                {formation.match}
+              </h2>
+              <p class="text-sm text-text/60">
+                Dernière mise à jour :{' '}
+                {new Date(formation.lastUpdated).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Home team formation */}
+              <FormationVisual
+                formation={formation.homeFormation}
+                players={formation.homePlayers}
+                teamName={formation.homeTeam}
+              />
+
+              {/* Away team formation */}
+              <FormationVisual
+                formation={formation.awayFormation}
+                players={formation.awayPlayers}
+                teamName={formation.awayTeam}
+              />
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
-  </div>
+    ) : (
+      <div class="card p-6 mb-8 bg-accent-light">
+        <div class="flex items-start gap-4">
+          <div class="text-3xl">ℹ️</div>
+          <div>
+            <h2 class="font-condensed font-semibold text-lg mb-2">
+              Aucune formation disponible
+            </h2>
+            <p class="text-sm text-text/80 leading-relaxed">
+              Les formations probables seront publiées avant chaque journée de
+              Serie A (jeudi 10h et samedi 8h).
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   <!-- How it works -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
