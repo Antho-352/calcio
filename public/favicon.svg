@@ -1,5 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="8" fill="#2D7A3A"/>
-  <text x="32" y="28" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="24" text-anchor="middle" fill="#FFFFFF" letter-spacing="2">VAI</text>
-  <text x="32" y="50" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="#FFFFFF" letter-spacing="1">CALCIO</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Badge background -->
+  <circle cx="100" cy="100" r="100" fill="#1E6B2E"/>
+  <!-- Inner ring accent -->
+  <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <!-- Top accent bar -->
+  <rect x="62" y="54" width="76" height="3" rx="1.5" fill="rgba(255,255,255,0.35)"/>
+  <!-- VAI — main word -->
+  <text
+    x="100" y="108"
+    font-family="'Arial Black', 'Impact', Arial, sans-serif"
+    font-weight="900"
+    font-size="72"
+    text-anchor="middle"
+    fill="#FFFFFF"
+    letter-spacing="6"
+  >VAI</text>
+  <!-- Thin separator line -->
+  <line x1="48" y1="120" x2="152" y2="120" stroke="rgba(255,255,255,0.30)" stroke-width="1"/>
+  <!-- CALCIO — sub-word -->
+  <text
+    x="100" y="146"
+    font-family="'Arial Black', 'Impact', Arial, sans-serif"
+    font-weight="900"
+    font-size="22"
+    text-anchor="middle"
+    fill="rgba(255,255,255,0.80)"
+    letter-spacing="9"
+  >CALCIO</text>
 </svg>

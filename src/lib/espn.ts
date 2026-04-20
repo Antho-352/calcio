@@ -151,34 +151,39 @@ export async function getESPNRoster(espnId: string): Promise<ESPNPlayer[]> {
 }
 
 /**
- * Get Serie A standings
+ * Get Serie A standings — uses apis/v2 endpoint (different base from site/v2)
  */
 export async function getESPNStandings(): Promise<ESPNStanding[]> {
-  const data = await fetchESPN<any>('/standings');
-  const groups: any[] = data?.standings?.entries ?? data?.children?.[0]?.standings?.entries ?? [];
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/ita.1/standings');
+    if (!res.ok) return [];
+    const data = await res.json();
+    const entries: any[] = data?.children?.[0]?.standings?.entries ?? [];
 
-  // Try alternate structure
-  const entries: any[] = groups.length > 0 ? groups
-    : (data?.standings?.[0]?.entries ?? []);
-
-  return entries.map((entry: any, idx: number) => {
-    const stats: Record<string, number> = {};
-    (entry.stats ?? []).forEach((s: any) => {
-      stats[s.name] = parseFloat(s.value ?? 0);
-    });
-    return {
-      espnId: String(entry.team?.id ?? ''),
-      position: idx + 1,
-      points: stats['points'] ?? stats['pts'] ?? 0,
-      played: stats['gamesPlayed'] ?? stats['played'] ?? 0,
-      won: stats['wins'] ?? stats['won'] ?? 0,
-      drawn: stats['ties'] ?? stats['drawn'] ?? 0,
-      lost: stats['losses'] ?? stats['lost'] ?? 0,
-      goalsFor: stats['pointsFor'] ?? stats['goalsFor'] ?? 0,
-      goalsAgainst: stats['pointsAgainst'] ?? stats['goalsAgainst'] ?? 0,
-      goalDifference: stats['pointDifferential'] ?? stats['goalDifference'] ?? 0,
-    };
-  }).filter((s) => s.espnId && ESPN_ID_TO_SLUG[s.espnId]);
+    return entries
+      .map((entry: any, idx: number) => {
+        const stats: Record<string, number> = {};
+        (entry.stats ?? []).forEach((s: any) => {
+          stats[s.name] = parseFloat(s.value ?? 0);
+        });
+        const espnId = String(entry.team?.id ?? '');
+        return {
+          espnId,
+          position: idx + 1,
+          points: stats['points'] ?? 0,
+          played: stats['gamesPlayed'] ?? 0,
+          won: stats['wins'] ?? 0,
+          drawn: stats['ties'] ?? 0,
+          lost: stats['losses'] ?? 0,
+          goalsFor: stats['pointsFor'] ?? 0,
+          goalsAgainst: stats['pointsAgainst'] ?? 0,
+          goalDifference: stats['pointDifferential'] ?? 0,
+        };
+      })
+      .filter((s) => s.espnId && ESPN_ID_TO_SLUG[s.espnId]);
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -201,8 +206,12 @@ export async function getESPNSchedule(): Promise<ESPNMatch[]> {
       if (!home || !away) return null;
 
       const statusType = comp.status?.type?.name ?? '';
+      const FINISHED_STATUSES = new Set([
+        'STATUS_FINAL', 'STATUS_FULL_TIME', 'STATUS_FULL_PEN',
+        'STATUS_HALFTIME', 'STATUS_END_PERIOD',
+      ]);
       const status: 'scheduled' | 'live' | 'finished' =
-        statusType === 'STATUS_FINAL' ? 'finished'
+        FINISHED_STATUSES.has(statusType) ? 'finished'
         : statusType === 'STATUS_IN_PROGRESS' ? 'live'
         : 'scheduled';
 
