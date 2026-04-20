@@ -1,0 +1,60 @@
+name: Daily build
+
+on:
+  schedule:
+    # Every day at 06:00 Paris time (04:00 UTC in summer, 05:00 UTC in winter)
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Clear API cache (force fresh data)
+        run: rm -f .cache/api-cache.json
+
+      - name: Build
+        run: npm run build
+        env:
+          WORDPRESS_GRAPHQL_URL: ${{ secrets.WORDPRESS_GRAPHQL_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+
+      # ─── Deploy ──────────────────────────────────────────────────────────────
+      # Option A — SSH deploy (recommended for VPS/PM2)
+      # Uncomment and configure after adding SSH_KEY + SERVER_HOST secrets in
+      # GitHub → Settings → Secrets and variables → Actions
+      #
+      # - name: Deploy via SSH
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SSH_KEY }}
+      #     script: |
+      #       cd /var/www/vai-calcio
+      #       git pull origin main
+      #       npm ci
+      #       npm run build
+      #       pm2 restart vai-calcio
+
+      # Option B — Build artifact (download manually or via FTP)
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.run_number }}
+          path: dist/
+          retention-days: 3

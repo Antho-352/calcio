@@ -249,7 +249,7 @@ export async function getTeamSquad(espnIdOrSlug: string | number): Promise<Playe
   }
   if (!espnId) return [];
 
-  return getCached(`squad-espn-${espnId}`, TTL.DAY, async () => {
+  return getCached(`squad-espn-${espnId}`, TTL.WEEK, async () => {
     const espnPlayers = await getESPNRoster(espnId!);
     if (!espnPlayers.length) return [];
 
@@ -330,7 +330,7 @@ export async function getPlayer(thesportsdbPlayerId: string): Promise<Player | n
  * Get matches from ESPN (2025-26 season)
  */
 export async function getMatches(round?: number, status?: 'scheduled' | 'finished'): Promise<Match[]> {
-  return getCached(`matches-espn-${status ?? 'all'}`, TTL.HOUR * 3, async () => {
+  return getCached(`matches-espn-${status ?? 'all'}`, TTL.DAY, async () => {
     const espnMatches = await getESPNSchedule();
     const today = new Date();
 
@@ -391,7 +391,7 @@ export async function getMatches(round?: number, status?: 'scheduled' | 'finishe
  * Get Serie A standings from ESPN (2025-26)
  */
 export async function getStandings(): Promise<Standing[]> {
-  return getCached('standings-espn-v1', TTL.HOUR * 6, async () => {
+  return getCached('standings-espn-v1', TTL.DAY, async () => {
     const espnStandings = await getESPNStandings();
 
     if (espnStandings.length > 0) {
