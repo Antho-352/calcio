@@ -1,114 +1,110 @@
 ---
 import PageLayout from '@/layouts/PageLayout.astro';
-import { getReferees } from '@/lib/football-api';
+import { getReferees, getRefereeStats } from '@/lib/football-api';
 
-// Fetch all Serie A referees
 const referees = await getReferees();
-
-// Sort by name
 referees.sort((a, b) => a.name.localeCompare(b.name));
+
+// Pre-load stats for the summary table
+const statsRows = await Promise.all(
+  referees.map(async (r) => {
+    const s = await getRefereeStats(r.id);
+    return { referee: r, stats: s };
+  })
+);
 ---
 
 <PageLayout
   title="Arbitres Serie A - Vai Calcio"
-  description="Liste complète des arbitres de Serie A avec leurs statistiques détaillées de la saison en cours."
+  description="Liste des arbitres de Serie A avec leurs statistiques : cartons, penalties, matchs dirigés."
   breadcrumbs={[{ label: 'Arbitres', href: '/arbitres' }]}
 >
   <div class="mb-8">
-    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">
-      Arbitres Serie A
-    </h1>
-    <p class="text-lg text-text/70">
-      Retrouvez tous les arbitres officiants en Serie A avec leurs statistiques
-      détaillées.
-    </p>
+    <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-4">Arbitres Serie A</h1>
+    <p class="text-lg text-text/70">Statistiques des arbitres de Serie A 2025/26.</p>
   </div>
 
-  <!-- Referees Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {
-      referees.map((referee) => {
-        const slug = referee.name.toLowerCase().replace(/\s+/g, '-');
+  <!-- Summary stats table -->
+  <div class="card mb-8 overflow-x-auto">
+    <div class="p-4 border-b border-separator">
+      <h2 class="font-condensed font-semibold text-xl">Tableau des statistiques</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-separator bg-gray-50">
+          <th class="px-4 py-3 text-left font-semibold text-text/60 text-xs uppercase tracking-wide">Arbitre</th>
+          <th class="px-3 py-3 text-center font-semibold text-text/60 text-xs uppercase tracking-wide">Matchs</th>
+          <th class="px-3 py-3 text-center font-semibold text-text/60 text-xs uppercase tracking-wide">Buts/M</th>
+          <th class="px-3 py-3 text-center font-semibold text-yellow-600 text-xs uppercase tracking-wide">Jaunes</th>
+          <th class="px-3 py-3 text-center font-semibold text-red-600 text-xs uppercase tracking-wide">Rouges</th>
+          <th class="px-3 py-3 text-center font-semibold text-text/60 text-xs uppercase tracking-wide">Pen.</th>
+          <th class="px-3 py-3 text-center font-semibold text-text/60 text-xs uppercase tracking-wide">Fautes/M</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-separator">
+        {statsRows.map(({ referee, stats }) => {
+          const slug = referee.name.toLowerCase().replace(/\s+/g, '-');
+          const m = stats?.matches ?? 0;
+          return (
+            <tr class="hover:bg-accent-light transition-colors">
+              <td class="px-4 py-3">
+                <a href={'/arbitres/' + slug} class="font-semibold hover:text-accent transition-colors">
+                  {referee.name}
+                </a>
+              </td>
+              <td class="px-3 py-3 text-center font-semibold">{m}</td>
+              <td class="px-3 py-3 text-center text-text/70">
+                {m > 0 ? (stats!.goals / m).toFixed(1) : '-'}
+              </td>
+              <td class="px-3 py-3 text-center font-semibold text-yellow-600">
+                {stats?.yellowCards ?? '-'}
+              </td>
+              <td class="px-3 py-3 text-center font-semibold text-red-600">
+                {stats?.redCards ?? '-'}
+              </td>
+              <td class="px-3 py-3 text-center text-text/70">
+                {stats?.penalties ?? '-'}
+              </td>
+              <td class="px-3 py-3 text-center text-text/70">
+                {m > 0 ? (stats!.fouls / m).toFixed(1) : '-'}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
 
+  <!-- Compact referee list -->
+  <div class="card">
+    <div class="p-4 border-b border-separator">
+      <h2 class="font-condensed font-semibold text-xl">Fiches arbitres</h2>
+    </div>
+    <div class="divide-y divide-separator">
+      {referees.map((referee) => {
+        const slug = referee.name.toLowerCase().replace(/\s+/g, '-');
         return (
           <a
-            href={`/arbitres/${slug}`}
-            class="card p-6 hover:shadow-lg transition-shadow"
+            href={'/arbitres/' + slug}
+            class="flex items-center gap-4 px-4 py-3 hover:bg-accent-light transition-colors"
           >
-            <div class="flex items-center gap-4 mb-4">
-              {referee.photo && (
-                <img
-                  src={referee.photo}
-                  alt={referee.name}
-                  class="w-16 h-16 rounded-full object-cover bg-gray-200"
-                  onerror="this.src='/referees/default.png'"
-                />
+            <div class="w-10 h-10 rounded-full bg-separator flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {referee.photo ? (
+                <img src={referee.photo} alt={referee.name} class="w-full h-full object-cover" />
+              ) : (
+                <span class="text-sm font-bold text-text/30">
+                  {referee.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                </span>
               )}
-              <div>
-                <h2 class="font-condensed font-semibold text-xl mb-1 hover:text-accent transition-colors">
-                  {referee.name}
-                </h2>
-                <p class="text-sm text-text/60">{referee.nationality}</p>
-              </div>
             </div>
-
-            <div class="pt-4 border-t border-separator">
-              <p class="text-sm text-accent font-medium">
-                Voir les statistiques →
-              </p>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-sm">{referee.name}</p>
+              <p class="text-xs text-text/50">Arbitre Serie A</p>
             </div>
+            <span class="text-accent text-sm">→</span>
           </a>
         );
-      })
-    }
-  </div>
-
-  <!-- Info Section -->
-  <div class="mt-12 card p-6 bg-accent-light">
-    <h2 class="font-condensed font-semibold text-xl mb-4">
-      À propos des arbitres
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-text/80">
-      <div>
-        <h3 class="font-semibold mb-2">Statistiques disponibles</h3>
-        <ul class="space-y-1">
-          <li>• Nombre de matchs arbitrés</li>
-          <li>• Cartons jaunes et rouges distribués</li>
-          <li>• Penalties sifflés</li>
-          <li>• Fautes sifflées par match</li>
-          <li>• Buts moyens par match</li>
-          <li>• Matchs arbitrés par équipe</li>
-        </ul>
-      </div>
-      <div>
-        <h3 class="font-semibold mb-2">Sources des données</h3>
-        <p class="leading-relaxed">
-          Les statistiques proviennent des matchs officiels de Serie A de la
-          saison en cours. Les données sont mises à jour après chaque journée de
-          championnat.
-        </p>
-      </div>
+      })}
     </div>
-  </div>
-
-  <!-- Quick Links -->
-  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-    <a href="/classement" class="card p-6 hover:shadow-md transition-shadow">
-      <h3 class="font-semibold mb-2">Classement</h3>
-      <p class="text-sm text-text/70">Classement complet Serie A</p>
-    </a>
-
-    <a
-      href="/resultats-calendrier"
-      class="card p-6 hover:shadow-md transition-shadow"
-    >
-      <h3 class="font-semibold mb-2">Résultats</h3>
-      <p class="text-sm text-text/70">Tous les matchs de Serie A</p>
-    </a>
-
-    <a href="/equipes/juventus" class="card p-6 hover:shadow-md transition-shadow">
-      <h3 class="font-semibold mb-2">Équipes</h3>
-      <p class="text-sm text-text/70">Fiches des équipes</p>
-    </a>
   </div>
 </PageLayout>

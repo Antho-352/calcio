@@ -33,50 +33,104 @@ npm run preview          # Preview production build
 **Static with getStaticPaths** (dynamic routes):
 - `/equipes/[slug]` — Team pages (20 teams)
 - `/arbitres/[slug]` — Referee pages (15 referees)
-- `/joueurs/[slug]` — Player pages
+- `/joueurs/[slug]` — Player pages (~700 players)
 
-### 2. Multi-API Football Data with Fallback
+### 2. Multi-API Football Data (Free Sources Only)
 
-`lib/football-api.ts` implements a **multi-API strategy** with automatic fallback to mock data:
+Three primary data sources, all free/public, no API key required:
 
-```typescript
-// Always wrap API calls with try-catch to fallback to mock data
-export async function getTeam(idOrSlug: string | number) {
-  return getCached(`team-${idOrSlug}`, TTL.WEEK, async () => {
-    if (API_CONFIG.theSportsDB.key) {
-      try {
-        return await fetchTheSportsDBTeam(idOrSlug);
-      } catch (error) {
-        console.warn('API call failed, using mock data:', error);
-        // Fall through to mock data
-      }
-    }
-    return MOCK_TEAMS.find(/* ... */);
-  });
-}
+#### ESPN Public API (`src/lib/espn.ts`)
+```
+https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1
+```
+- **Logos**: `https://a.espncdn.com/i/teamlogos/soccer/500/{espnId}.png` (stable CDN)
+- **Teams**: `/teams` → 20 Serie A 2025-26 teams
+- **Rosters**: `/teams/{espnId}/roster` → current squad with positions, DOB, height
+- **Schedule**: `/scoreboard?limit=500&dates=20250801-20260701` → full season
+- **Standings**: `/standings` → real-time league table
+- No key needed. Match status: `STATUS_FINAL` → finished, else date-based fallback
+
+#### Fantamaster CDN (`src/lib/fantamaster.ts`)
+```
+https://apicdn.fantamaster.it/playersstats/
+```
+- ~585 players, roles P/D/C/A, goals/assists/cards/ratings/value
+- Name format: "Lastname Firstinitial" e.g. "Martinez L"
+- Use `normalize()` for accent-insensitive matching
+- Always scope by `teamSlug` to avoid cross-team name collisions
+- `getAllPlayerStats()`, `getPlayerStatsByTeamSlug(slug)`, `getPlayerStatsByName(name, teamSlug?)`
+
+#### Wikipedia FR API (`src/lib/wikipedia.ts`)
+```
+https://fr.wikipedia.org/w/api.php
+```
+- Free, no key, French descriptions for clubs and players
+- `getWikipediaExtract(slugOrTitle, 'fr', sentences)` — teams (static mapping in TEAM_WIKI_FR)
+- `getWikipediaPlayerExtract(playerName, 'fr', 3)` — players (direct name search)
+
+#### TheSportsDB (`src/lib/thesportsdb.ts`)
+```
+https://www.thesportsdb.com/api/v1/json/3/
+```
+- Key "3" (free tier) — **CRITICAL: key "1" returns 404**
+- **Use `searchteams.php?t=NAME` NOT `lookupteam.php?id=X`** — the lookup endpoint always returns Arsenal data for all IDs on free tier
+- Used for: stadium name, capacity, founded year, website, hex colors
+- Filter results with `strCountry === 'Italy'`
+
+### 3. Data Flow in `lib/football-api.ts`
+
+```
+getTeam(slug)
+  ├─ ESPN logo (from BASE_TEAMS static mapping)
+  ├─ TheSportsDB searchteams → stadium, capacity, founded, colors, website
+  └─ Wikipedia FR → club description
+
+getTeamSquad(espnId)
+  ├─ ESPN roster → primary (2025-26 squad, positions, DOB, height)
+  └─ TheSportsDB players → photo URLs as fallback
+
+getMatches()
+  ├─ ESPN scoreboard → real schedule + scores
+  └─ Date-based status fallback (if ESPN returns "scheduled" but date is past → "finished")
+
+getStandings()
+  ├─ ESPN /standings → real table
+  └─ Mock fallback if ESPN unavailable
+
+getTeamTopScorers(teamId, limit)
+  └─ Fantamaster → goals, assists, caps, rating (filtered by team)
+
+getPlayerSeasonStats(playerName, teamSlug?)
+  └─ Fantamaster → season stats (team-scoped for accurate matching)
 ```
 
-**Critical**: Never throw errors from API functions. Always return mock data as fallback.
+### 4. Serie A 2025-26 Teams (20 clubs)
 
-### 3. File-Based Cache (Persists Across Restarts)
+ESPN IDs for `BASE_TEAMS`:
+- Inter Milan: 110, AC Milan: 103, Juventus: 111, Napoli: 114, AS Roma: 104
+- Lazio: 112, Atalanta: 105, Fiorentina: 109, Torino: 239, Bologna: 107
+- Udinese: 118, Genoa: 3263, Lecce: 113, Hellas Verona: 119, Cagliari: 2925
+- Como: 2572, Parma: 115, **Cremonese: 4050**, **Pisa: 3956**, **Sassuolo: 3997**
 
-`lib/cache.ts` uses **JSON file cache** (`.cache/api-cache.json`) that survives PM2 restarts:
+Promoted 2025-26: Cremonese, Pisa, Sassuolo (replaced Venezia, Monza, Empoli)
+
+### 5. File-Based Cache (Persists Across Restarts)
+
+`lib/cache.ts` uses **JSON file cache** (`.cache/api-cache.json`):
 
 ```typescript
-const standings = await getCached(
-  'standings-serie-a',
-  24 * 60 * 60 * 1000,  // 24h TTL
-  async () => await getStandings()
-);
+const standings = await getCached('standings-espn-v1', TTL.HOUR * 6, async () => { ... });
 ```
 
 **TTL Strategy**:
-- Standings/Calendar: 24h
-- Match results: 6h
-- Player/Team stats: 7 days
-- Live scores: 30s (memory only during match windows)
+- Standings/Calendar: 6h
+- Match results: 3h
+- Player/Team stats: 1 day
+- Team enrichment (TheSportsDB + Wikipedia): 1 week
 
-### 4. WordPress Headless Integration
+**Clear cache when data is stale**: `rm -f .cache/api-cache.json`
+
+### 6. WordPress Headless Integration
 
 **URL**: wp.vai-calcio.fr (with .htaccess redirect to prevent duplicate content)
 
@@ -87,7 +141,7 @@ const standings = await getCached(
 
 **Webhook**: `/api/revalidate` invalidates cache when WP publishes content (requires `REVALIDATE_SECRET`)
 
-### 5. Design System (Immutable)
+### 7. Design System (Immutable)
 
 **Colors** (defined in `tailwind.config.mjs`):
 - `background: #F5F5F0` (off-white)
@@ -107,6 +161,10 @@ const standings = await getCached(
 - No emojis
 - Grid-based layouts (3-4 columns on desktop)
 
+**Logo/Favicon**: Simple SVG — "VAI" / "CALCIO" on green (#2D7A3A) background
+- `/public/favicon.svg` — browser tab icon
+- `/public/player-placeholder.svg` — fallback for missing player photos
+
 ## Common Pitfalls
 
 ### 1. Dynamic Route Pages Without getStaticPaths
@@ -115,126 +173,83 @@ const standings = await getCached(
 
 **Solution**:
 ```astro
----
-import { getTeams } from '@/lib/football-api';
-
 export async function getStaticPaths() {
   const teams = await getTeams();
   return teams.map((team) => ({
     params: { slug: team.name.toLowerCase().replace(/\s+/g, '-') },
   }));
 }
----
 ```
 
 ### 2. JSX Template Literals in Astro
 
-**Problem**: Template literals inside JSX `class` attributes cause syntax errors
+**Wrong**: `<tr class={\`base-classes ${dynamicClass}\`}>`
+**Right**: `<tr class={'base-classes ' + dynamicClass}>`
 
-**Wrong**:
-```astro
-<tr class={`base-classes ${dynamicClass}`}>
-```
+Or pre-compute in frontmatter.
 
-**Right**:
-```astro
-<tr class={'base-classes ' + dynamicClass}>
-```
-
-Or pre-compute in frontmatter:
-```astro
----
-const items = data.map(item => ({
-  ...item,
-  computedClass: getClass(item)  // Pre-compute before JSX
-}));
----
-<tr class={item.computedClass}>
-```
-
-### 3. Mock Data Generation
-
-When generating mock matches, **Serie A = 10 matches per matchday** (20 teams / 2):
+### 3. TheSportsDB — Never Use lookupteam
 
 ```typescript
-// Generate 10 finished matches (last matchday) + 10 scheduled (next matchday)
-for (let i = 0; i < 20; i++) {
-  const isFinished = i < 10;
-  const teamIndex = i % 10;  // Pair teams: 0-1, 2-3, 4-5, etc.
-  // ...
-}
+// WRONG — always returns Arsenal data:
+fetchSportsDB(`/lookupteam.php?id=${id}`)
+
+// CORRECT — search by name + filter by Italy:
+fetchSportsDB(`/searchteams.php?t=${encodeURIComponent(name)}`)
+  .then(teams => teams.find(t => t.strCountry === 'Italy'))
 ```
 
-### 4. Deployment Zip Creation
+### 4. Fantamaster Name Matching
 
-**Wrong**: `zip -r site.zip dist/` → creates `dist/` folder inside zip
+FM names are "Lastname Initial" format. Always normalize accents and scope by team:
 
-**Right**:
+```typescript
+// Normalize accents before comparison:
+function normalize(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+
+// Scope by team to avoid cross-team name collisions:
+getPlayerSeasonStats(player.name, team.thesportsdbSlug)
+```
+
+### 5. Match Status — ESPN Returns "scheduled" for Past Matches
+
+ESPN's scoreboard API sometimes returns historical matches as "scheduled". The date-based fallback in `getMatches()` handles this:
+```typescript
+const resolvedStatus = m.status === 'finished' ? 'finished'
+  : matchDate < today ? 'finished'
+  : 'scheduled';
+```
+
+### 6. Deployment Zip Creation
+
 ```bash
-cd dist && zip -r ../vai-calcio-fr.zip .
+cd dist && zip -r ../vai-calcio-fr.zip .  # NOT: zip -r site.zip dist/
 ```
-
-Use **fixed filename** (no timestamps) to overwrite previous zip.
 
 ## Project-Specific Conventions
 
 ### File Naming
-
 - Components: PascalCase (`ArticleCard.astro`)
 - Pages: kebab-case (`resultats-calendrier.astro`)
 - Lib utilities: camelCase (`football-api.ts`)
 
 ### Component Organization
-
 - **Layouts**: `BaseLayout` (HTML shell) → `PageLayout` (breadcrumbs) → `ArticleLayout` (sidebar)
 - **Islands**: Preact components in `components/islands/` (use `client:load` sparingly)
 - **Lib**: Pure functions, no side effects, always typed
 
-### GraphQL Query Pattern
-
-Centralize in `lib/wordpress.ts` with consistent structure:
-
-```typescript
-export async function getPostsByCategory(category: string, limit = 10, offset = 0) {
-  const query = `
-    query GetPostsByCategory($category: String!, $limit: Int!, $offset: Int!) {
-      posts(
-        first: $limit
-        after: $offset
-        where: { categoryName: $category, orderby: { field: DATE, order: DESC } }
-      ) {
-        nodes { /* fields */ }
-        pageInfo { hasNextPage endCursor }
-      }
-    }
-  `;
-  const data = await graphQLClient.request(query, { category, limit, offset });
-  return { posts: data.posts.nodes, total: data.posts.pageInfo.total };
-}
-```
-
 ## Development Workflow
 
 ### Local Development
-
-1. Ensure WordPress is running at `wp.vai-calcio.fr` (optional)
-2. Copy `.env.example` to `.env`
-3. Run `npm run dev` → http://localhost:5432
-4. All API calls fallback to mock data if not configured
+1. Copy `.env.example` to `.env` (WordPress optional — all football data is free/public)
+2. Run `npm run dev` → http://localhost:5432
+3. All football data (ESPN, Fantamaster, Wikipedia) works without API keys
 
 ### Adding New Pages
-
 1. Static page: Create in `src/pages/`
 2. Dynamic page: Add `getStaticPaths()` + `export const prerender = true`
 3. SSR page: Add `export const prerender = false`
 4. Update `src/components/Header.astro` navigation if needed
-
-### Adding New API Endpoints
-
-1. Create in `src/pages/api/` with `.ts` extension
-2. Add `export const prerender = false`
-3. Return `new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })`
-4. Add CORS headers if needed for client-side fetch
 
 ## Key Environment Variables
 
@@ -244,17 +259,8 @@ export async function getPostsByCategory(category: string, limit = 10, offset = 
 - `BREVO_API_KEY` — Newsletter (Brevo/Sendinblue)
 - `BREVO_LIST_ID` — Newsletter list ID
 
-**Optional (fallback to mock data)**:
-- `FOOTBALL_API_KEY` — API-Football
-- `FOOTBALL_DATA_API_KEY` — Football-data.org
-- `THESPORTSDB_API_KEY` — Always "1" (free tier)
-
-## Resources
-
-- **Architecture details**: See full project plan in `.claude/plans/`
-- **WordPress setup**: `docs/wordpress-setup.md`
-- **API documentation**: Comments in `lib/football-api.ts`
-- **Mock data**: All mock data defined at top of `lib/football-api.ts` (20 teams, 15 referees, etc.)
+**Optional** (football data works without these):
+- `THESPORTSDB_API_KEY` — Use "3" (free tier) — key "1" returns 404
 
 ## Contact
 

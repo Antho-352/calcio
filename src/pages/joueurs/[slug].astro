@@ -1,202 +1,287 @@
 ---
 import PageLayout from '@/layouts/PageLayout.astro';
-import { getPlayerStats } from '@/lib/football-api';
+import { getTeams, getTeamSquad, getPlayerSeasonStats, type Player, type Team } from '@/lib/football-api';
+import { getWikipediaPlayerExtract } from '@/lib/wikipedia';
+import { slugify } from '@/lib/utils';
 
 export const prerender = true;
 
-const { slug } = Astro.params;
+export async function getStaticPaths() {
+  const teams = await getTeams();
+  const paths: { params: { slug: string }; props: { player: Player; team: Team } }[] = [];
 
-// For now, use mock data with player ID 1
-// TODO: Map slug to player ID when API is configured
-const playerStats = await getPlayerStats(1);
+  for (const team of teams) {
+    const squad = await getTeamSquad(team.espnId ?? team.thesportsdbSlug ?? String(team.id));
+    for (const player of squad) {
+      const slug = slugify(player.name);
+      paths.push({ params: { slug }, props: { player, team } });
+    }
+  }
 
-if (!playerStats) {
-  return Astro.redirect('/404');
+  return paths;
 }
 
-const { player, team, league, season, games, goals, cards } = playerStats;
+const { slug } = Astro.params;
+const { player, team } = Astro.props;
+
+// Try to get a French Wikipedia description if not already in player data
+let description = player.description;
+if (!description) {
+  try {
+    const wiki = await getWikipediaPlayerExtract(player.name, 'fr', 3);
+    description = wiki?.extract;
+  } catch { /* ignore */ }
+}
+
+const age = player.age > 0 ? player.age : null;
+const teamSlug = team.name.toLowerCase().replace(/\s+/g, '-');
+
+// Season stats from Fantamaster (scoped to team for accurate matching)
+let seasonStats = null;
+try {
+  seasonStats = await getPlayerSeasonStats(player.name, team.thesportsdbSlug);
+} catch { /* ignore */ }
 ---
 
 <PageLayout
-  title={`${player.name} - Vai Calcio`}
-  description={`Statistiques et actualités de ${player.name}, ${player.position} de ${team.name}.`}
+  title={`${player.name} - ${team.name} - Vai Calcio`}
+  description={`Profil et statistiques de ${player.name}, ${player.position} de ${team.name} en Serie A.`}
   breadcrumbs={[
     { label: 'Joueurs', href: '/joueurs' },
+    { label: team.name, href: `/equipes/${teamSlug}` },
     { label: player.name, href: `/joueurs/${slug}` },
   ]}
 >
-  <!-- Player Header -->
+  <!-- Header joueur -->
   <div class="mb-8">
-    <div class="flex items-center gap-6 mb-6">
-      {
-        player.photo && (
-          <img
-            src={player.photo}
-            alt={player.name}
-            class="w-24 h-24 rounded-full object-cover"
-          />
-        )
-      }
+    <div class="flex items-start gap-6 mb-6">
+      <div class="w-28 h-28 rounded-full overflow-hidden bg-separator flex items-center justify-center flex-shrink-0">
+        <img
+          src={player.photo || '/player-placeholder.svg'}
+          alt={player.name}
+          class="w-full h-full object-cover"
+          onerror="this.src='/player-placeholder.svg'"
+        />
+      </div>
       <div>
         <h1 class="text-4xl md:text-5xl font-condensed font-bold mb-2">
           {player.name}
         </h1>
-        <div class="flex items-center gap-4 text-text/70">
-          <span>{player.position}</span>
-          <span>•</span>
-          <span>{player.age} ans</span>
+        <div class="flex flex-wrap items-center gap-3 text-text/70">
+          <span class="font-medium">{player.position}</span>
+          {age && (
+            <>
+              <span>•</span>
+              <span>{age} ans</span>
+            </>
+          )}
           <span>•</span>
           <span>{player.nationality}</span>
         </div>
+        {player.number && (
+          <div class="mt-2">
+            <span class="inline-block px-3 py-1 bg-accent text-white text-sm font-bold rounded">
+              N°{player.number}
+            </span>
+          </div>
+        )}
       </div>
     </div>
 
-    <!-- Player Info Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="card p-4">
-        <p class="text-xs text-text/60 mb-1">Équipe actuelle</p>
-        <p class="font-semibold">{team.name}</p>
+    <!-- Infos rapides -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="card p-3">
+        <p class="text-xs text-text/60 mb-1">Équipe</p>
+        <a href={`/equipes/${teamSlug}`} class="flex items-center gap-2 hover:text-accent transition-colors">
+          {team.logo && <img src={team.logo} alt={team.name} class="w-5 h-5 object-contain" />}
+          <span class="font-semibold text-sm">{team.name}</span>
+        </a>
       </div>
-      {
-        player.number && (
-          <div class="card p-4">
-            <p class="text-xs text-text/60 mb-1">Numéro</p>
-            <p class="font-semibold text-2xl">{player.number}</p>
-          </div>
-        )
-      }
-      <div class="card p-4">
+      <div class="card p-3">
         <p class="text-xs text-text/60 mb-1">Poste</p>
-        <p class="font-semibold">{player.position}</p>
+        <p class="font-semibold text-sm">{player.position}</p>
       </div>
-      <div class="card p-4">
-        <p class="text-xs text-text/60 mb-1">Nationalité</p>
-        <p class="font-semibold">{player.nationality}</p>
-      </div>
+      {player.birthdate && (
+        <div class="card p-3">
+          <p class="text-xs text-text/60 mb-1">Date de naissance</p>
+          <p class="font-semibold text-sm">
+            {new Date(player.birthdate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+      )}
+      {player.nationality && (
+        <div class="card p-3">
+          <p class="text-xs text-text/60 mb-1">Nationalité</p>
+          <p class="font-semibold text-sm">{player.nationality}</p>
+        </div>
+      )}
     </div>
   </div>
 
-  <!-- Stats Section -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Stats -->
+    <!-- Contenu principal -->
     <div class="lg:col-span-2 space-y-6">
-      <!-- Season Stats -->
-      <div class="card">
-        <div class="p-6 border-b border-separator">
-          <h2 class="font-condensed font-semibold text-xl">
-            Statistiques {league} {season}/{season + 1}
-          </h2>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div class="text-center">
-              <p class="text-3xl font-bold text-accent">
-                {games.appearences}
-              </p>
-              <p class="text-sm text-text/60 mt-1">Matchs joués</p>
-            </div>
-            <div class="text-center">
-              <p class="text-3xl font-bold text-accent">{games.lineups}</p>
-              <p class="text-sm text-text/60 mt-1">Titularisations</p>
-            </div>
-            <div class="text-center">
-              <p class="text-3xl font-bold text-accent">{games.minutes}</p>
-              <p class="text-sm text-text/60 mt-1">Minutes jouées</p>
-            </div>
-            <div class="text-center">
-              <p class="text-3xl font-bold text-accent">
-                {Math.round(games.minutes / games.appearences)}
-              </p>
-              <p class="text-sm text-text/60 mt-1">Min. par match</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Goals & Assists -->
-      <div class="card">
-        <div class="p-6 border-b border-separator">
-          <h2 class="font-condensed font-semibold text-xl">
-            Buts et passes décisives
-          </h2>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-3 gap-6 text-center">
-            <div>
-              <p class="text-4xl font-bold text-green-600">{goals.total}</p>
-              <p class="text-sm text-text/60 mt-2">Buts marqués</p>
-            </div>
-            <div>
-              <p class="text-4xl font-bold text-blue-600">{goals.assists}</p>
-              <p class="text-sm text-text/60 mt-2">Passes décisives</p>
-            </div>
-            <div>
-              <p class="text-4xl font-bold text-accent">
-                {goals.total + goals.assists}
-              </p>
-              <p class="text-sm text-text/60 mt-2">Contributions</p>
-            </div>
+      {description && (
+        <div class="card">
+          <div class="p-4 border-b border-separator">
+            <h2 class="font-condensed font-semibold text-xl">Biographie</h2>
+          </div>
+          <div class="p-5">
+            <p class="text-sm leading-relaxed text-text/80">{description}</p>
           </div>
         </div>
-      </div>
+      )}
 
-      <!-- Discipline -->
-      <div class="card">
-        <div class="p-6 border-b border-separator">
-          <h2 class="font-condensed font-semibold text-xl">Discipline</h2>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-2 gap-6 text-center">
-            <div>
-              <p class="text-4xl font-bold text-yellow-500">{cards.yellow}</p>
-              <p class="text-sm text-text/60 mt-2">Cartons jaunes</p>
-            </div>
-            <div>
-              <p class="text-4xl font-bold text-red-600">{cards.red}</p>
-              <p class="text-sm text-text/60 mt-2">Cartons rouges</p>
-            </div>
+      <!-- Caractéristiques physiques -->
+      {(player.height || player.weight) && (
+        <div class="card">
+          <div class="p-4 border-b border-separator">
+            <h2 class="font-condensed font-semibold text-xl">Caractéristiques</h2>
+          </div>
+          <div class="p-4 grid grid-cols-2 gap-4">
+            {player.height && (
+              <div class="text-center">
+                <p class="text-2xl font-bold text-accent">{player.height}</p>
+                <p class="text-xs text-text/60 mt-1">Taille</p>
+              </div>
+            )}
+            {player.weight && (
+              <div class="text-center">
+                <p class="text-2xl font-bold text-accent">{player.weight}</p>
+                <p class="text-xs text-text/60 mt-1">Poids</p>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
+
+      <!-- Statistiques saison -->
+      {seasonStats ? (
+        <div class="card">
+          <div class="p-4 border-b border-separator">
+            <h2 class="font-condensed font-semibold text-xl">Statistiques 2025/26</h2>
+          </div>
+          <div class="p-4">
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="text-center p-3 bg-accent-light rounded">
+                <p class="text-3xl font-bold text-accent">{seasonStats.goals}</p>
+                <p class="text-xs text-text/60 mt-1">Buts</p>
+              </div>
+              <div class="text-center p-3 bg-accent-light rounded">
+                <p class="text-3xl font-bold text-accent">{seasonStats.assists}</p>
+                <p class="text-xs text-text/60 mt-1">Passes D.</p>
+              </div>
+              <div class="text-center p-3 bg-accent-light rounded">
+                <p class="text-3xl font-bold text-accent">{seasonStats.caps}</p>
+                <p class="text-xs text-text/60 mt-1">Matchs</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              {seasonStats.averageRating > 0 && (
+                <div class="flex justify-between items-center py-2 border-b border-separator">
+                  <span class="text-text/60">Note moy.</span>
+                  <span class="font-bold">{seasonStats.averageRating.toFixed(2)}</span>
+                </div>
+              )}
+              <div class="flex justify-between items-center py-2 border-b border-separator">
+                <span class="text-text/60">Jaunes</span>
+                <span class="font-semibold text-yellow-600">{seasonStats.yellowCards}</span>
+              </div>
+              {seasonStats.redCards > 0 && (
+                <div class="flex justify-between items-center py-2 border-b border-separator">
+                  <span class="text-text/60">Rouges</span>
+                  <span class="font-semibold text-red-600">{seasonStats.redCards}</span>
+                </div>
+              )}
+              {seasonStats.penalties > 0 && (
+                <div class="flex justify-between items-center py-2 border-b border-separator">
+                  <span class="text-text/60">Pen. marqués</span>
+                  <span class="font-semibold">{seasonStats.penalties}</span>
+                </div>
+              )}
+            </div>
+            {seasonStats.last5 && seasonStats.last5.caps > 0 && (
+              <div class="mt-4">
+                <p class="text-xs font-semibold text-text/50 uppercase tracking-wide mb-2">5 derniers matchs</p>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                  <div class="bg-separator/50 rounded p-2">
+                    <p class="font-bold">{seasonStats.last5.caps}</p>
+                    <p class="text-text/50">Matchs</p>
+                  </div>
+                  <div class="bg-separator/50 rounded p-2">
+                    <p class="font-bold text-accent">{seasonStats.last5.goals}</p>
+                    <p class="text-text/50">Buts</p>
+                  </div>
+                  <div class="bg-separator/50 rounded p-2">
+                    <p class="font-bold">{seasonStats.last5.assists}</p>
+                    <p class="text-text/50">Passes</p>
+                  </div>
+                  <div class="bg-separator/50 rounded p-2">
+                    <p class="font-bold">{seasonStats.last5.averageRating > 0 ? seasonStats.last5.averageRating.toFixed(1) : '-'}</p>
+                    <p class="text-text/50">Note</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div class="card p-5 bg-accent-light">
+          <h2 class="font-condensed font-semibold text-lg mb-2">Statistiques 2025/26</h2>
+          <p class="text-sm text-text/70">Statistiques non disponibles pour ce joueur.</p>
+        </div>
+      )}
     </div>
 
     <!-- Sidebar -->
     <aside class="space-y-6">
-      <!-- Quick Info -->
-      <div class="card p-6">
+      <!-- Fiche identité -->
+      <div class="card p-5">
         <h3 class="font-condensed font-semibold text-lg mb-4">Informations</h3>
-        <ul class="space-y-3 text-sm">
+        <ul class="space-y-2 text-sm">
+          {player.firstname && (
+            <li class="flex justify-between">
+              <span class="text-text/60">Prénom</span>
+              <span class="font-medium">{player.firstname}</span>
+            </li>
+          )}
+          {player.lastname && (
+            <li class="flex justify-between">
+              <span class="text-text/60">Nom</span>
+              <span class="font-medium">{player.lastname}</span>
+            </li>
+          )}
+          {age && (
+            <li class="flex justify-between">
+              <span class="text-text/60">Âge</span>
+              <span class="font-medium">{age} ans</span>
+            </li>
+          )}
           <li class="flex justify-between">
-            <span class="text-text/60">Prénom</span>
-            <span class="font-medium">{player.firstname}</span>
+            <span class="text-text/60">Poste</span>
+            <span class="font-medium">{player.position}</span>
           </li>
           <li class="flex justify-between">
-            <span class="text-text/60">Nom</span>
-            <span class="font-medium">{player.lastname}</span>
+            <span class="text-text/60">Nationalité</span>
+            <span class="font-medium">{player.nationality}</span>
           </li>
-          <li class="flex justify-between">
-            <span class="text-text/60">Âge</span>
-            <span class="font-medium">{player.age} ans</span>
-          </li>
+          {player.number && (
+            <li class="flex justify-between">
+              <span class="text-text/60">Numéro</span>
+              <span class="font-bold text-accent">#{player.number}</span>
+            </li>
+          )}
         </ul>
       </div>
 
-      <!-- Team Link -->
-      <div class="card p-6">
-        <h3 class="font-condensed font-semibold text-lg mb-4">Équipe</h3>
-        <a
-          href={`/equipes/${team.name.toLowerCase().replace(/\s+/g, '-')}`}
-          class="flex items-center gap-3 hover:text-accent transition-colors"
-        >
-          {
-            team.logo && (
-              <img
-                src={team.logo}
-                alt={team.name}
-                class="w-10 h-10 object-contain"
-              />
-            )
-          }
+      <!-- Lien équipe -->
+      <div class="card p-5">
+        <h3 class="font-condensed font-semibold text-lg mb-3">Équipe actuelle</h3>
+        <a href={`/equipes/${teamSlug}`} class="flex items-center gap-3 hover:text-accent transition-colors">
+          {team.logo && (
+            <img src={team.logo} alt={team.name} class="w-10 h-10 object-contain" />
+          )}
           <div>
             <p class="font-semibold">{team.name}</p>
             <p class="text-xs text-text/60">Voir la fiche équipe →</p>
@@ -204,15 +289,23 @@ const { player, team, league, season, games, goals, cards } = playerStats;
         </a>
       </div>
 
-      <!-- Quick Links -->
-      <div class="card p-6 bg-accent-light">
-        <h3 class="font-condensed font-semibold text-lg mb-3">
-          Plus d'infos
-        </h3>
-        <p class="text-sm text-text/80 leading-relaxed">
-          Les statistiques détaillées et l'historique du joueur seront
-          disponibles prochainement.
-        </p>
+      <!-- Liens utiles -->
+      <div class="card p-5">
+        <h3 class="font-condensed font-semibold text-lg mb-4">Liens utiles</h3>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="/classement" class="flex items-center justify-between hover:text-accent transition-colors">
+              <span>Classement</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+          <li>
+            <a href="/resultats-calendrier" class="flex items-center justify-between hover:text-accent transition-colors">
+              <span>Résultats & Calendrier</span>
+              <span class="text-accent">→</span>
+            </a>
+          </li>
+        </ul>
       </div>
     </aside>
   </div>

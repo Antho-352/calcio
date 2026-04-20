@@ -3,7 +3,7 @@ import PageLayout from '@/layouts/PageLayout.astro';
 import ArticleGrid from '@/components/ArticleGrid.astro';
 import { getPostsByCategory, getCategoryBySlug } from '@/lib/wordpress';
 
-export const prerender = true;
+export const prerender = false;
 
 const { slug } = Astro.params;
 
