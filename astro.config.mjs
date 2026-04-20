@@ -2,7 +2,6 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwind from '@astrojs/tailwind';
-import sitemap from '@astrojs/sitemap';
 // import preact from '@astrojs/preact'; // TODO: Fix compatibility issue with Astro 5
 import pagefind from 'astro-pagefind';
 
@@ -17,10 +16,7 @@ export default defineConfig({
     tailwind({
       applyBaseStyles: false,
     }),
-    sitemap({
-      filter: (page) => !page.includes('/api/'),
-      customPages: [],
-    }),
+    // sitemap() disabled - using dynamic SSR sitemap at /sitemap.xml
     // preact({ compat: true }), // TODO: Fix compatibility issue with Astro 5
     pagefind(),
   ],

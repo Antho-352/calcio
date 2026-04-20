@@ -27,6 +27,7 @@ npm run preview          # Preview production build
 
 **SSR routes** need explicit `export const prerender = false`:
 - `/api/*` — All API routes (revalidate, newsletter, scores, standings)
+- `/sitemap.xml` — Dynamic sitemap (auto-updates with WordPress articles)
 - `/blog/[slug]` — Individual articles (planned SSR + cache)
 
 **Static with getStaticPaths** (dynamic routes):
