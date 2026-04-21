@@ -391,7 +391,7 @@ export async function getMatches(round?: number, status?: 'scheduled' | 'finishe
  * Get Serie A standings from ESPN (2025-26)
  */
 export async function getStandings(): Promise<Standing[]> {
-  return getCached('standings-espn-v1', TTL.DAY, async () => {
+  return getCached('standings-espn-v2', TTL.DAY, async () => {
     const espnStandings = await getESPNStandings();
 
     if (espnStandings.length > 0) {

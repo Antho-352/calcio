@@ -2,6 +2,7 @@
 // Couvre la Serie A 2025-26 avec logos, effectifs et calendrier
 
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1';
+const BASE_V2 = 'https://site.api.espn.com/apis/v2/sports/soccer/ita.1';
 
 // Static mapping: our slug → ESPN team ID (Serie A 2025-26)
 export const ESPN_TEAM_IDS: Record<string, string> = {
@@ -93,9 +94,9 @@ export interface ESPNMatch {
   venue?: string;
 }
 
-async function fetchESPN<T>(path: string): Promise<T | null> {
+async function fetchESPN<T>(path: string, base = BASE): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE}${path}`);
+    const res = await fetch(`${base}${path}`);
     if (!res.ok) return null;
     return await res.json() as T;
   } catch {
@@ -169,18 +170,21 @@ export async function getESPNStandings(): Promise<ESPNStanding[]> {
         const espnId = String(entry.team?.id ?? '');
         return {
           espnId,
-          position: idx + 1,
+          // rank stat is 1-based position in table
+          position: stats['rank'] ? Math.round(stats['rank']) : idx + 1,
           points: stats['points'] ?? 0,
           played: stats['gamesPlayed'] ?? 0,
           won: stats['wins'] ?? 0,
           drawn: stats['ties'] ?? 0,
           lost: stats['losses'] ?? 0,
+          // In ESPN soccer: pointsFor = goals scored, pointsAgainst = goals conceded
           goalsFor: stats['pointsFor'] ?? 0,
           goalsAgainst: stats['pointsAgainst'] ?? 0,
           goalDifference: stats['pointDifferential'] ?? 0,
         };
       })
-      .filter((s) => s.espnId && ESPN_ID_TO_SLUG[s.espnId]);
+      .filter((s) => s.espnId && ESPN_ID_TO_SLUG[s.espnId])
+      .sort((a, b) => a.position - b.position);
   } catch {
     return [];
   }
@@ -208,7 +212,7 @@ export async function getESPNSchedule(): Promise<ESPNMatch[]> {
       const statusType = comp.status?.type?.name ?? '';
       const FINISHED_STATUSES = new Set([
         'STATUS_FINAL', 'STATUS_FULL_TIME', 'STATUS_FULL_PEN',
-        'STATUS_HALFTIME', 'STATUS_END_PERIOD',
+        'STATUS_POSTPONED', 'STATUS_ABANDONED',
       ]);
       const status: 'scheduled' | 'live' | 'finished' =
         FINISHED_STATUSES.has(statusType) ? 'finished'
